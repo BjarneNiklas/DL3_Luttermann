@@ -86,9 +86,9 @@ interface = gr.Interface(
         gr.Slider(1, 128, value=32, label="Batch Size")
     ],
     outputs=[
-        gr.outputs.Plot(label="Best Fit - Noiseless Data"),
-        gr.outputs.Plot(label="Best Fit - Noisy Data"),
-        gr.outputs.Plot(label="Overfit - Noisy Data")
+        gr.Plot(label="Best Fit - Noiseless Data"),
+        gr.Plot(label="Best Fit - Noisy Data"),
+        gr.Plot(label="Overfit - Noisy Data")
     ],
     title="FFNN Regression with TensorFlow.js and Plotly",
     description="Train and visualize regression models using Feed-Forward Neural Network (FFNN) on noisy and noiseless data."
