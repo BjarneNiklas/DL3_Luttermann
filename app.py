@@ -192,20 +192,22 @@ def create_model(layers, neurons, learning_rate):
 def train_models(x_train, y_train, y_train_noisy, epochs, epochs_overfit, neurons, layers, learning_rate, batch_size):
     # Model without noise
     model_unverrauscht = create_model(layers, neurons, learning_rate)
-    model_unverrauscht.fit(x_train, y_train, epochs=epochs, batch_size=batch_size, verbose=0)
+    history_unverrauscht = model_unverrauscht.fit(x_train, y_train, epochs=epochs, batch_size=batch_size, verbose=0)
     
     # Best-fit model with noise
     model_best_fit = create_model(layers, neurons, learning_rate)
-    model_best_fit.fit(x_train, y_train_noisy, epochs=epochs, batch_size=batch_size, verbose=0)
+    history_best_fit = model_best_fit.fit(x_train, y_train_noisy, epochs=epochs, batch_size=batch_size, verbose=0)
     
     # Overfit model with noise
     model_over_fit = create_model(layers, neurons, learning_rate)
-    model_over_fit.fit(x_train, y_train_noisy, epochs=epochs_overfit, batch_size=batch_size, verbose=0)
+    history_over_fit = model_over_fit.fit(x_train, y_train_noisy, epochs=epochs_overfit, batch_size=batch_size, verbose=0)
     
-    return model_unverrauscht, model_best_fit, model_over_fit
+    return model_unverrauscht, model_best_fit, model_over_fit, history_unverrauscht, history_best_fit, history_over_fit
 
 # Visualize the results
-def plot_results(x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy, model_unverrauscht, model_best_fit, model_over_fit):
+def plot_results(x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy, 
+                 model_unverrauscht, model_best_fit, model_over_fit,
+                 history_unverrauscht, history_best_fit, history_over_fit):
     # Original function
     x_line = np.linspace(-2, 2, 100)
     y_line = 0.5 * (x_line + 0.8) * (x_line + 1.8) * (x_line - 0.2) * (x_line - 0.3) * (x_line - 1.9) + 1
@@ -248,59 +250,62 @@ def plot_results(x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy, 
     fig.add_trace(go.Scatter(x=x_test, y=y_test_pred_over_fit, mode='markers', name='Test Predictions (Over-Fit)'), row=4, col=2)
 
     fig.update_layout(height=1000, width=1200, title_text="Regression with FFNN and TensorFlow")
+
+    # Add loss information as annotations
+    fig.add_annotation(x=0.5, y=1.15, xref='paper', yref='paper', 
+                       text=f"Train Loss (Unnoisy Model): {history_unverrauscht.history['loss'][-1]:.4f}", showarrow=False)
+    fig.add_annotation(x=0.5, y=1.1, xref='paper', yref='paper', 
+                       text=f"Train Loss (Best-Fit Model): {history_best_fit.history['loss'][-1]:.4f}", showarrow=False)
+    fig.add_annotation(x=0.5, y=1.05, xref='paper', yref='paper', 
+                       text=f"Train Loss (Overfit Model): {history_over_fit.history['loss'][-1]:.4f}", showarrow=False)
     
     return fig
 
 # Gradio Interface for interactive plot generation
 def interactive_plot(N, variance, x_min, x_max, layers, neurons, learning_rate, epochs, epochs_overfit, batch_size):
     try:
-        # Prepare the data
-        print("Starting data preparation...")
+        status = "Starting data preparation..."
+        yield status, None
         x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy = prepare_data(N, variance, x_min, x_max)
-        print("Data preparation done.")
+        status = "Data preparation done."
+        yield status, None
         
-        # Train the models
-        print("Starting model training...")
-        model_unverrauscht, model_best_fit, model_over_fit = train_models(
+        status = "Starting model training..."
+        yield status, None
+        model_unverrauscht, model_best_fit, model_over_fit, history_unverrauscht, history_best_fit, history_over_fit = train_models(
             x_train, y_train, y_train_noisy, epochs, epochs_overfit, neurons, layers, learning_rate, batch_size
         )
-        print("Model training done.")
+        status = "Model training done."
+        yield status, None
         
-        # Generate the plot
-        print("Generating plot...")
-        fig = plot_results(x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy, model_unverrauscht, model_best_fit, model_over_fit)
-        print("Plot generated.")
-        
-        return fig
+        status = "Generating plot..."
+        yield status, None
+        fig = plot_results(x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy, 
+                           model_unverrauscht, model_best_fit, model_over_fit,
+                           history_unverrauscht, history_best_fit, history_over_fit)
+        status = "Plot generated."
+        yield status, fig
     except Exception as e:
         error_message = f"An error occurred: {str(e)}"
-        print(error_message)
-        return error_message
+        yield error_message, None
 
 # Gradio interface configuration
 data_inputs = [
     gr.Slider(50, 200, step=1, value=100, label="Data Points (N)"),
     gr.Slider(0.01, 0.1, step=0.01, value=0.05, label="Noise Variance (V)"),
-    gr.Slider(-3.0, 3.0, step=0.1, value=-2.0, label="X Min"),
-    gr.Slider(-3.0, 3.0, step=0.1, value=2.0, label="X Max")
+    gr.Slider(-3.0, 3
+    gr.Slider(-3.0, 3.0, step=0.1, value=-2.0, label="Minimum X Value"),
+    gr.Slider(-3.0, 3.0, step=0.1, value=2.0, label="Maximum X Value"),
+    gr.Slider(1, 5, step=1, value=2, label="Number of Layers"),
+    gr.Slider(5, 100, step=5, value=20, label="Neurons per Layer"),
+    gr.Slider(0.0001, 0.01, step=0.0001, value=0.001, label="Learning Rate"),
+    gr.Slider(10, 100, step=10, value=50, label="Epochs"),
+    gr.Slider(10, 200, step=10, value=100, label="Epochs for Overfitting"),
+    gr.Slider(1, 32, step=1, value=16, label="Batch Size")
 ]
 
-model_inputs = [
-    gr.Slider(1, 10, step=1, value=3, label="Hidden Layers"),
-    gr.Slider(10, 200, step=10, value=100, label="Neurons per Layer"),
-    gr.Slider(0.001, 0.1, step=0.001, value=0.01, label="Learning Rate"),
-    gr.Slider(50, 500, step=50, value=100, label="Epochs"),
-    gr.Slider(500, 2000, step=100, value=1000, label="Epochs (for Overfit Model)"),
-    gr.Slider(16, 128, step=16, value=32, label="Batch Size")
-]
-
-interface = gr.Interface(
-    fn=interactive_plot, 
-    inputs=data_inputs + model_inputs, 
-    outputs=gr.Plot(),
-    title="FFNN Regression with TensorFlow.js",
-    description="Visualize the training and test results of different FFNN models."
-).launch()
+iface = gr.Interface(interactive_plot, data_inputs, "plot")
+iface.launch()
 
 
 
