@@ -2,7 +2,6 @@ import gradio as gr
 import numpy as np
 import tensorflow as tf
 import plotly.graph_objs as go
-from sklearn.model_selection import train_test_split
 
 # Funktion zur Datengenerierung
 def generate_data(N, V, X_min, X_max):
@@ -10,14 +9,12 @@ def generate_data(N, V, X_min, X_max):
     y_values = 0.5 * (x_values + 0.8) * (x_values + 1.8) * (x_values - 0.2) * (x_values - 0.3) * (x_values - 1.9) + 1
     y_values_noisy = y_values + np.random.normal(0, np.sqrt(V), N)
     
-    # Zufällige Auswahl der Trainings- und Testdaten
-    x_train, x_test, y_train, y_test = train_test_split(x_values, y_values, test_size=0.5, random_state=42)
-    x_noisy_train, x_noisy_test, y_noisy_train, y_noisy_test = train_test_split(x_values, y_values_noisy, test_size=0.5, random_state=42)
-    
-    train_data = (x_train, y_train)
-    test_data = (x_test, y_test)
-    noisy_train_data = (x_noisy_train, y_noisy_train)
-    noisy_test_data = (x_noisy_test, y_noisy_test)
+    # Manuelle Aufteilung der Daten in Trainings- und Testdaten
+    split_index = N // 2
+    train_data = (x_values[:split_index], y_values[:split_index])
+    test_data = (x_values[split_index:], y_values[split_index:])
+    noisy_train_data = (x_values[:split_index], y_values_noisy[:split_index])
+    noisy_test_data = (x_values[split_index:], y_values_noisy[split_index:])
     
     return train_data, test_data, noisy_train_data, noisy_test_data
 
@@ -80,23 +77,23 @@ def main(N, V, X_min, X_max, hidden_layers, neurons_per_layer, learning_rate, ep
 interface = gr.Interface(
     fn=main,
     inputs=[
-        gr.inputs.Slider(50, 500, default=100, label="Data Points (N)"),
-        gr.inputs.Slider(0.01, 1.0, default=0.05, label="Noise Variance (V)"),
-        gr.inputs.Slider(-5, 0, default=-2, step=0.1, label="X Min"),
-        gr.inputs.Slider(0, 5, default=2, step=0.1, label="X Max"),
-        gr.inputs.Slider(1, 10, default=2, label="Hidden Layers"),
-        gr.inputs.Slider(10, 200, default=100, label="Neurons per Layer"),
-        gr.inputs.Slider(0.001, 0.1, default=0.01, step=0.001, label="Learning Rate"),
-        gr.inputs.Slider(10, 1000, default=100, label="Epochs"),
-        gr.inputs.Slider(10, 1000, default=500, label="Overfit Epochs"),
-        gr.inputs.Slider(1, 128, default=32, label="Batch Size")
+        gr.Slider(50, 500, default=100, label="Data Points (N)"),
+        gr.Slider(0.01, 1.0, default=0.05, label="Noise Variance (V)"),
+        gr.Slider(-5, 0, default=-2, step=0.1, label="X Min"),
+        gr.Slider(0, 5, default=2, step=0.1, label="X Max"),
+        gr.Slider(1, 10, default=2, label="Hidden Layers"),
+        gr.Slider(10, 200, default=100, label="Neurons per Layer"),
+        gr.Slider(0.001, 0.1, default=0.01, step=0.001, label="Learning Rate"),
+        gr.Slider(10, 1000, default=100, label="Epochs"),
+        gr.Slider(10, 1000, default=500, label="Overfit Epochs"),
+        gr.Slider(1, 128, default=32, label="Batch Size")
     ],
     outputs=[
-        gr.outputs.Plot(label="Train Data - Noiseless"),
-        gr.outputs.Plot(label="Test Data - Noiseless"),
-        gr.outputs.Plot(label="Train Data - Noisy"),
-        gr.outputs.Plot(label="Test Data - Noisy"),
-        gr.outputs.Plot(label="Overfit - Noisy Data")
+        gr.Plot(label="Train Data - Noiseless"),
+        gr.Plot(label="Test Data - Noiseless"),
+        gr.Plot(label="Train Data - Noisy"),
+        gr.Plot(label="Test Data - Noisy"),
+        gr.Plot(label="Overfit - Noisy Data")
     ],
     title="FFNN Regression with TensorFlow and Plotly",
     description="Train and visualize regression models using Feed-Forward Neural Network (FFNN) on noisy and noiseless data."
@@ -105,7 +102,6 @@ interface = gr.Interface(
 # Start Gradio Interface
 if __name__ == "__main__":
     interface.launch()
-
 
 
 
