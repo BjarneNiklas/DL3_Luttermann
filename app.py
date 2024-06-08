@@ -113,8 +113,12 @@ interface = gr.Interface(
     ],
     layout="2-left-3-right",  # Layout anpassen
     title="FFNN Regression with TensorFlow and Plotly",
-    description="Train and visualize regression models using Feed-Forward
+    description="Train and visualize regression models using Feed-Forward"
+)
 
+# Start Gradio Interface
+if __name__ == "__main__":
+    interface.launch()
 
 
 """import numpy as np
