@@ -5,6 +5,143 @@ import plotly.subplots as sp
 import gradio as gr
 
 # Generierung der Daten
+def generate_data(N=100, x_min=-2, x_max=2):
+    x = np.random.uniform(x_min, x_max, N)
+    y = 0.5 * (x + 0.8) * (x + 1.8) * (x - 0.2) * (x - 0.3) * (x - 1.9) + 1
+    return x, y
+
+# Hinzufügen von Rauschen
+def add_noise(y, variance=0.05):
+    noise = np.random.normal(0, np.sqrt(variance), y.shape)
+    return y + noise
+
+# Daten generieren
+def prepare_data(N, variance, x_min, x_max):
+    x, y = generate_data(N, x_min, x_max)
+    x_train, x_test = x[:N//2], x[N//2:]
+    y_train, y_test = y[:N//2], y[N//2:]
+    
+    y_train_noisy = add_noise(y_train, variance)
+    y_test_noisy = add_noise(y_test, variance)
+    
+    return x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy
+
+# Modell definieren und trainieren
+def create_model(layers, neurons, learning_rate):
+    model = tf.keras.Sequential()
+    for _ in range(layers):
+        model.add(tf.keras.layers.Dense(neurons, activation='relu'))
+    model.add(tf.keras.layers.Dense(1, activation='linear'))
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate), loss='mean_squared_error')
+    return model
+
+# Trainiere Modelle
+def train_models(x_train, y_train, y_train_noisy, epochs, epochs_overfit, neurons, layers, learning_rate, batch_size):
+    # Modell ohne Rauschen
+    model_unverrauscht = create_model(layers, neurons, learning_rate)
+    model_unverrauscht.fit(x_train, y_train, epochs=epochs, batch_size=batch_size, verbose=0)
+    
+    # Modell mit Rauschen (Best-Fit)
+    model_best_fit = create_model(layers, neurons, learning_rate)
+    model_best_fit.fit(x_train, y_train_noisy, epochs=epochs, batch_size=batch_size, verbose=0)
+    
+    # Modell mit Rauschen (Over-Fit)
+    model_over_fit = create_model(layers, neurons, learning_rate)
+    model_over_fit.fit(x_train, y_train_noisy, epochs=epochs_overfit, batch_size=batch_size, verbose=0)
+    
+    return model_unverrauscht, model_best_fit, model_over_fit
+
+# Visualisierung der Ergebnisse
+def plot_results(x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy, model_unverrauscht, model_best_fit, model_over_fit):
+    # Originalfunktion
+    x_line = np.linspace(-2, 2, 100)
+    y_line = 0.5 * (x_line + 0.8) * (x_line + 1.8) * (x_line - 0.2) * (x_line - 0.3) * (x_line - 1.9) + 1
+
+    # Vorhersagen
+    y_train_pred_unverrauscht = model_unverrauscht.predict(x_train).flatten()
+    y_test_pred_unverrauscht = model_unverrauscht.predict(x_test).flatten()
+
+    y_train_pred_best_fit = model_best_fit.predict(x_train).flatten()
+    y_test_pred_best_fit = model_best_fit.predict(x_test).flatten()
+
+    y_train_pred_over_fit = model_over_fit.predict(x_train).flatten()
+    y_test_pred_over_fit = model_over_fit.predict(x_test).flatten()
+
+    # Plotly Visualisierung
+    fig = sp.make_subplots(rows=4, cols=2, subplot_titles=(
+        'Train Data (No Noise)', 'Train Data (With Noise)', 
+        'Test Data (No Noise)', 'Test Data (With Noise)',
+        'Train Predictions (Unverrauscht)', 'Train Predictions (With Noise)',
+        'Test Predictions (Unverrauscht)', 'Test Predictions (With Noise)'
+    ))
+
+    # R1: Die Datensätze
+    fig.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data (No Noise)'), row=1, col=1)
+    fig.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data (No Noise)'), row=2, col=1)
+
+    fig.add_trace(go.Scatter(x=x_train, y=y_train_noisy, mode='markers', name='Train Data (With Noise)'), row=1, col=2)
+    fig.add_trace(go.Scatter(x=x_test, y=y_test_noisy, mode='markers', name='Test Data (With Noise)'), row=2, col=2)
+
+    # R2: Die Vorhersage des Modells, das ohne Rauschen trainiert wurde
+    fig.add_trace(go.Scatter(x=x_train, y=y_train_pred_unverrauscht, mode='markers', name='Train Predictions (Unverrauscht)'), row=3, col=1)
+    fig.add_trace(go.Scatter(x=x_test, y=y_test_pred_unverrauscht, mode='markers', name='Test Predictions (Unverrauscht)'), row=4, col=1)
+
+    # R3: Die Vorhersage Ihres besten Modells
+    fig.add_trace(go.Scatter(x=x_train, y=y_train_pred_best_fit, mode='markers', name='Train Predictions (Best-Fit)'), row=3, col=2)
+    fig.add_trace(go.Scatter(x=x_test, y=y_test_pred_best_fit, mode='markers', name='Test Predictions (Best-Fit)'), row=4, col=2)
+
+    # R4: Die Vorhersage Ihres Overfit-Modells
+    fig.add_trace(go.Scatter(x=x_train, y=y_train_pred_over_fit, mode='markers', name='Train Predictions (Over-Fit)'), row=3, col=2)
+    fig.add_trace(go.Scatter(x=x_test, y=y_test_pred_over_fit, mode='markers', name='Test Predictions (Over-Fit)'), row=4, col=2)
+
+    fig.update_layout(height=1000, width=1200, title_text="Regression mit FFNN und TensorFlow.js")
+    
+    return fig
+
+# Gradio Interface
+def interactive_plot(N, variance, x_min, x_max, layers, neurons, learning_rate, epochs, epochs_overfit, batch_size):
+    x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy = prepare_data(N, variance, x_min, x_max)
+    model_unverrauscht, model_best_fit, model_over_fit = train_models(
+        x_train, y_train, y_train_noisy, epochs, epochs_overfit, neurons, layers, learning_rate, batch_size
+    )
+    fig = plot_results(x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy, model_unverrauscht, model_best_fit, model_over_fit)
+    return fig
+
+data_inputs = [
+    gr.inputs.Slider(50, 200, step=1, default=100, label="Data Points (N)"),
+    gr.inputs.Slider(0.01, 0.1, step=0.01, default=0.05, label="Noise Variance (V)"),
+    gr.inputs.Slider(-3.0, 3.0, step=0.1, default=-2.0, label="X Min"),
+    gr.inputs.Slider(-3.0, 3.0, step=0.1, default=2.0, label="X Max")
+]
+
+model_inputs = [
+    gr.inputs.Slider(1, 10, step=1, default=3, label="Hidden Layers"),
+    gr.inputs.Slider(10, 200, step=10, default=100, label="Neurons per Layer"),
+    gr.inputs.Slider(0.001, 0.1, step=0.001, default=0.01, label="Learning Rate"),
+    gr.inputs.Slider(50, 500, step=50, default=100, label="Epochs"),
+    gr.inputs.Slider(500, 2000, step=100, default=1000, label="Epochs (for Overfit Model)"),
+    gr.inputs.Slider(16, 128, step=16, default=32, label="Batch Size")
+]
+
+interface = gr.Interface(
+    fn=interactive_plot, 
+    inputs=data_inputs + model_inputs, 
+    outputs=gr.Plot(),
+    layout="two-col",
+    title="Regression mit FFNN und TensorFlow.js",
+    theme="dark"
+)
+
+interface.launch()
+
+
+"""import numpy as np
+import tensorflow as tf
+import plotly.graph_objects as go
+import plotly.subplots as sp
+import gradio as gr
+
+# Generierung der Daten
 def generate_data(N=100):
     x = np.random.uniform(-2, 2, N)
     y = 0.5 * (x + 0.8) * (x + 1.8) * (x - 0.2) * (x - 0.3) * (x - 1.9) + 1
@@ -100,7 +237,7 @@ def interactive_plot():
 
 interface = gr.Interface(fn=interactive_plot, inputs=[], outputs=gr.Plot())
 
-interface.launch()
+interface.launch()"""
 
 
 """ import numpy as np
