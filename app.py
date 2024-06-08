@@ -108,19 +108,19 @@ def interactive_plot(N, variance, x_min, x_max, layers, neurons, learning_rate, 
     return fig
 
 data_inputs = [
-    gr.inputs.Slider(50, 200, step=1, default=100, label="Data Points (N)"),
-    gr.inputs.Slider(0.01, 0.1, step=0.01, default=0.05, label="Noise Variance (V)"),
-    gr.inputs.Slider(-3.0, 3.0, step=0.1, default=-2.0, label="X Min"),
-    gr.inputs.Slider(-3.0, 3.0, step=0.1, default=2.0, label="X Max")
+    gr.Slider(50, 200, step=1, value=100, label="Data Points (N)"),
+    gr.Slider(0.01, 0.1, step=0.01, value=0.05, label="Noise Variance (V)"),
+    gr.Slider(-3.0, 3.0, step=0.1, value=-2.0, label="X Min"),
+    gr.Slider(-3.0, 3.0, step=0.1, value=2.0, label="X Max")
 ]
 
 model_inputs = [
-    gr.inputs.Slider(1, 10, step=1, default=3, label="Hidden Layers"),
-    gr.inputs.Slider(10, 200, step=10, default=100, label="Neurons per Layer"),
-    gr.inputs.Slider(0.001, 0.1, step=0.001, default=0.01, label="Learning Rate"),
-    gr.inputs.Slider(50, 500, step=50, default=100, label="Epochs"),
-    gr.inputs.Slider(500, 2000, step=100, default=1000, label="Epochs (for Overfit Model)"),
-    gr.inputs.Slider(16, 128, step=16, default=32, label="Batch Size")
+    gr.Slider(1, 10, step=1, value=3, label="Hidden Layers"),
+    gr.Slider(10, 200, step=10, value=100, label="Neurons per Layer"),
+    gr.Slider(0.001, 0.1, step=0.001, value=0.01, label="Learning Rate"),
+    gr.Slider(50, 500, step=50, value=100, label="Epochs"),
+    gr.Slider(500, 2000, step=100, value=1000, label="Epochs (for Overfit Model)"),
+    gr.Slider(16, 128, step=16, value=32, label="Batch Size")
 ]
 
 interface = gr.Interface(
@@ -133,6 +133,7 @@ interface = gr.Interface(
 )
 
 interface.launch()
+
 
 
 """import numpy as np
