@@ -9,11 +9,14 @@ def generate_data(N=100, V=0.05, X_min=-2, X_max=2):
     y_values = 0.5 * (x_values + 0.8) * (x_values + 1.8) * (x_values - 0.2) * (x_values - 0.3) * (x_values - 1.9) + 1
     y_values_noisy = y_values + np.random.normal(0, np.sqrt(V), N)
     
-    # Manuelle Aufteilung der Daten in Trainings- und Testdaten
+    # Zufällige, gleichmäßige Aufteilung der Daten in Trainings- und Testdaten
+    indices = np.random.permutation(N)
     split_index = N // 2
-    x_train, x_test = x_values[:split_index], x_values[split_index:]
-    y_train, y_test = y_values[:split_index], y_values[split_index:]
-    y_noisy_train, y_noisy_test = y_values_noisy[:split_index], y_values_noisy[split_index:]
+    train_indices, test_indices = indices[:split_index], indices[split_index:]
+    
+    x_train, y_train = x_values[train_indices], y_values[train_indices]
+    x_test, y_test = x_values[test_indices], y_values[test_indices]
+    y_noisy_train, y_noisy_test = y_values_noisy[train_indices], y_values_noisy[test_indices]
     
     return (x_train, y_train), (x_test, y_test), (x_train, y_noisy_train), (x_test, y_noisy_test)
 
@@ -34,48 +37,52 @@ def create_and_train_model(train_data, hidden_layers, neurons_per_layer, learnin
     return model
 
 # Funktion zur Vorhersage und Plot-Generierung
-def plot_predictions(train_data, test_data, model, title):
-    x_train, y_train = train_data
-    x_test, y_test = test_data
+def plot_predictions(x_train, y_train, x_test, y_test, model, title):
+    y_pred_train = model.predict(x_train).flatten()
+    y_pred_test = model.predict(x_test).flatten()
     
-    y_train_pred = model.predict(x_train).flatten()
-    y_test_pred = model.predict(x_test).flatten()
-    
-    trace_train = go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data', marker=dict(color='blue'))
-    trace_test = go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data', marker=dict(color='red'))
-    trace_train_pred = go.Scatter(x=x_train, y=y_train_pred, mode='lines', name='Train Prediction', line=dict(color='blue', dash='dot'))
-    trace_test_pred = go.Scatter(x=x_test, y=y_test_pred, mode='lines', name='Test Prediction', line=dict(color='red', dash='dot'))
+    trace_train_data = go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data', marker=dict(color='blue'))
+    trace_test_data = go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data', marker=dict(color='red'))
+    trace_train_pred = go.Scatter(x=x_train, y=y_pred_train, mode='lines', name='Train Prediction', line=dict(color='blue', dash='dash'))
+    trace_test_pred = go.Scatter(x=x_test, y=y_pred_test, mode='lines', name='Test Prediction', line=dict(color='red', dash='dash'))
 
     layout = go.Layout(title=title, xaxis={'title': 'x'}, yaxis={'title': 'y'})
-    fig = go.Figure(data=[trace_train, trace_test, trace_train_pred, trace_test_pred], layout=layout)
-    
-    # Berechnung des Loss
-    train_loss = np.mean((y_train - y_train_pred)**2)
-    test_loss = np.mean((y_test - y_test_pred)**2)
-    fig.add_annotation(xref="paper", yref="paper", x=0.5, y=0.9,
-                       text=f"Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}",
-                       showarrow=False, font=dict(size=12))
+    fig = go.Figure(data=[trace_train_data, trace_test_data, trace_train_pred, trace_test_pred], layout=layout)
     
     return fig
+
+# Funktion zur Berechnung des Loss
+def compute_loss(y_true, y_pred):
+    return np.mean((y_true - y_pred)**2)
 
 # Hauptfunktion zur Verarbeitung der Eingaben und Rückgabe der Plots
 def main(N, V, X_min, X_max, hidden_layers, neurons_per_layer, learning_rate, epochs, overfit_epochs, batch_size):
     # Daten generieren
-    train_data, test_data, noisy_train_data, noisy_test_data = generate_data(N, V, X_min, X_max)
+    (x_train, y_train), (x_test, y_test), (x_train_noisy, y_train_noisy), (x_test_noisy, y_test_noisy) = generate_data(N, V, X_min, X_max)
     
-    # Modell für Noiseless Data trainieren
-    model_noiseless = create_and_train_model(train_data, hidden_layers, neurons_per_layer, learning_rate, epochs, batch_size)
-    fig_noiseless = plot_predictions(train_data, test_data, model_noiseless, "Noiseless Data - Train and Test Predictions")
+    # Plot für noiseless Data
+    noiseless_plot = plot_predictions(x_train, y_train, x_test, y_test, None, "Noiseless Datasets")
+    noiseless_plot.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data', marker=dict(color='blue')))
+    noiseless_plot.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data', marker=dict(color='red')))
+
+    # Plot für noisy Data
+    noisy_plot = plot_predictions(x_train_noisy, y_train_noisy, x_test_noisy, y_test_noisy, None, "Noisy Datasets")
+    noisy_plot.add_trace(go.Scatter(x=x_train_noisy, y=y_train_noisy, mode='markers', name='Train Data', marker=dict(color='blue')))
+    noisy_plot.add_trace(go.Scatter(x=x_test_noisy, y=y_test_noisy, mode='markers', name='Test Data', marker=dict(color='red')))
     
-    # Modell für Noisy Data trainieren (Best-Fit)
-    model_noisy_best_fit = create_and_train_model(noisy_train_data, hidden_layers, neurons_per_layer, learning_rate, epochs, batch_size)
-    fig_noisy_best_fit = plot_predictions(noisy_train_data, noisy_test_data, model_noisy_best_fit, "Noisy Data - Best-Fit Predictions")
+    # Modell für noiseless Data trainieren
+    model_noiseless = create_and_train_model((x_train, y_train), hidden_layers, neurons_per_layer, learning_rate, epochs, batch_size)
+    noiseless_predictions_plot = plot_predictions(x_train, y_train, x_test, y_test, model_noiseless, "Unnoisy Model Predictions")
+
+    # Modell für noisy Data trainieren (Best-Fit)
+    model_noisy_best_fit = create_and_train_model((x_train_noisy, y_train_noisy), hidden_layers, neurons_per_layer, learning_rate, epochs, batch_size)
+    best_fit_predictions_plot = plot_predictions(x_train_noisy, y_train_noisy, x_test_noisy, y_test_noisy, model_noisy_best_fit, "Best-Fit Predictions")
     
     # Modell für Overfitting mit Noisy Data trainieren
-    model_noisy_overfit = create_and_train_model(noisy_train_data, hidden_layers, neurons_per_layer, learning_rate, overfit_epochs, batch_size)
-    fig_noisy_overfit = plot_predictions(noisy_train_data, noisy_test_data, model_noisy_overfit, "Noisy Data - Overfit Predictions")
+    model_noisy_overfit = create_and_train_model((x_train_noisy, y_train_noisy), hidden_layers, neurons_per_layer, learning_rate, overfit_epochs, batch_size)
+    overfit_predictions_plot = plot_predictions(x_train_noisy, y_train_noisy, x_test_noisy, y_test_noisy, model_noisy_overfit, "Overfit Predictions")
     
-    return fig_noiseless, fig_noisy_best_fit, fig_noisy_overfit
+    return noiseless_plot, noisy_plot, noiseless_predictions_plot, best_fit_predictions_plot, overfit_predictions_plot
 
 # Gradio Interface
 interface = gr.Interface(
@@ -93,10 +100,13 @@ interface = gr.Interface(
         gr.Slider(1, 128, value=32, label="Batch Size")
     ],
     outputs=[
-        gr.Plot(label="Noiseless Data - Train and Test Predictions"),
-        gr.Plot(label="Noisy Data - Best-Fit Predictions"),
-        gr.Plot(label="Noisy Data - Overfit Predictions")
+        gr.Plot(label="Noiseless Datasets"),
+        gr.Plot(label="Noisy Datasets"),
+        gr.Plot(label="Unnoisy Model Predictions"),
+        gr.Plot(label="Best-Fit Predictions"),
+        gr.Plot(label="Overfit Predictions")
     ],
+    layout="unaligned",
     title="FFNN Regression with TensorFlow and Plotly",
     description="Train and visualize regression models using Feed-Forward Neural Network (FFNN) on noisy and noiseless data."
 )
@@ -104,8 +114,6 @@ interface = gr.Interface(
 # Start Gradio Interface
 if __name__ == "__main__":
     interface.launch()
-
-
 
 
 
