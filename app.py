@@ -111,7 +111,7 @@ interface = gr.Interface(
         gr.Plot(label="Best-Fit Predictions"),
         gr.Plot(label="Overfit Predictions")
     ],
-    layout="2-left-3-right",  # Layout anpassen
+    #layout="2-left-3-right",  # Layout anpassen
     title="FFNN Regression with TensorFlow and Plotly",
     description="Train and visualize regression models using Feed-Forward"
 )
