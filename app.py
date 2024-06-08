@@ -76,19 +76,19 @@ def gradio_app(x_min, x_max, noise_var, epochs_best_fit, epochs_overfit):
 iface = gr.Interface(
     fn=gradio_app,
     inputs=[
-        gr.inputs.Slider(-2, 2, step=0.1, label="X min", value=-2),
-        gr.inputs.Slider(-2, 2, step=0.1, label="X max", value=2),
-        gr.inputs.Slider(0, 0.1, step=0.01, label="Noise Variance", value=0.05),
-        gr.inputs.Slider(1, 1000, step=1, label="Best Fit Epochs", value=200),
-        gr.inputs.Slider(1, 1000, step=1, label="Overfit Epochs", value=500)
+        gr.Slider(-2, 2, step=0.1, label="X min", value=-2),
+        gr.Slider(-2, 2, step=0.1, label="X max", value=2),
+        gr.Slider(0, 0.1, step=0.01, label="Noise Variance", value=0.05),
+        gr.Slider(1, 1000, step=1, label="Best Fit Epochs", value=200),
+        gr.Slider(1, 1000, step=1, label="Overfit Epochs", value=500)
     ],
     outputs=[
-        gr.outputs.Plot(label="Clean Data (Train)"),
-        gr.outputs.Plot(label="Clean Data (Test)"),
-        gr.outputs.Plot(label="Best Fit (Train)"),
-        gr.outputs.Plot(label="Best Fit (Test)"),
-        gr.outputs.Plot(label="Overfit (Train)"),
-        gr.outputs.Plot(label="Overfit (Test)")
+        gr.Plot(label="Clean Data (Train)"),
+        gr.Plot(label="Clean Data (Test)"),
+        gr.Plot(label="Best Fit (Train)"),
+        gr.Plot(label="Best Fit (Test)"),
+        gr.Plot(label="Overfit (Train)"),
+        gr.Plot(label="Overfit (Test)")
     ],
     layout="grid"
 )
