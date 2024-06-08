@@ -146,13 +146,14 @@ interface = gr.Interface(
 
 interface.launch()"""
 
+"""
 import numpy as np
 import tensorflow as tf
 import plotly.graph_objects as go
 import plotly.subplots as sp
 import gradio as gr
 
-# Generate synthetic data
+# Generate data
 def generate_data(N=100, x_min=-2, x_max=2):
     x = np.random.uniform(x_min, x_max, N)
     y = 0.5 * (x + 0.8) * (x + 1.8) * (x - 0.2) * (x - 0.3) * (x - 1.9) + 1
@@ -305,9 +306,6 @@ data_inputs = [
 
 iface = gr.Interface(interactive_plot, data_inputs, "plot")
 iface.launch()
-
-
-
 """
     
 import numpy as np
@@ -412,7 +410,7 @@ def interactive_plot():
 
 interface = gr.Interface(fn=interactive_plot, inputs=[], outputs=gr.Plot())
 
-interface.launch()"""
+interface.launch()
 
 
 """ import numpy as np
