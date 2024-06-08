@@ -4,19 +4,18 @@ import tensorflow as tf
 import plotly.graph_objs as go
 
 # Funktion zur Datengenerierung
-def generate_data(N, V, X_min, X_max):
+def generate_data(N=100, V=0.05, X_min=-2, X_max=2):
     x_values = np.sort(np.random.uniform(X_min, X_max, N))
     y_values = 0.5 * (x_values + 0.8) * (x_values + 1.8) * (x_values - 0.2) * (x_values - 0.3) * (x_values - 1.9) + 1
     y_values_noisy = y_values + np.random.normal(0, np.sqrt(V), N)
     
     # Manuelle Aufteilung der Daten in Trainings- und Testdaten
     split_index = N // 2
-    train_data = (x_values[:split_index], y_values[:split_index])
-    test_data = (x_values[split_index:], y_values[split_index:])
-    noisy_train_data = (x_values[:split_index], y_values_noisy[:split_index])
-    noisy_test_data = (x_values[split_index:], y_values_noisy[split_index:])
+    x_train, x_test = x_values[:split_index], x_values[split_index:]
+    y_train, y_test = y_values[:split_index], y_values[split_index:]
+    y_noisy_train, y_noisy_test = y_values_noisy[:split_index], y_values_noisy[split_index:]
     
-    return train_data, test_data, noisy_train_data, noisy_test_data
+    return (x_train, y_train), (x_test, y_test), (x_train, y_noisy_train), (x_test, y_noisy_test)
 
 # Funktion zur Erstellung und Training des Modells
 def create_and_train_model(train_data, hidden_layers, neurons_per_layer, learning_rate, epochs, batch_size):
@@ -42,13 +41,20 @@ def plot_predictions(train_data, test_data, model, title):
     y_train_pred = model.predict(x_train).flatten()
     y_test_pred = model.predict(x_test).flatten()
     
-    trace_train = go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data')
-    trace_test = go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data')
-    trace_train_pred = go.Scatter(x=x_train, y=y_train_pred, mode='lines', name='Train Prediction', line=dict(dash='dot'))
-    trace_test_pred = go.Scatter(x=x_test, y=y_test_pred, mode='lines', name='Test Prediction', line=dict(dash='dot'))
+    trace_train = go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data', marker=dict(color='blue'))
+    trace_test = go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data', marker=dict(color='red'))
+    trace_train_pred = go.Scatter(x=x_train, y=y_train_pred, mode='lines', name='Train Prediction', line=dict(color='blue', dash='dot'))
+    trace_test_pred = go.Scatter(x=x_test, y=y_test_pred, mode='lines', name='Test Prediction', line=dict(color='red', dash='dot'))
 
     layout = go.Layout(title=title, xaxis={'title': 'x'}, yaxis={'title': 'y'})
     fig = go.Figure(data=[trace_train, trace_test, trace_train_pred, trace_test_pred], layout=layout)
+    
+    # Berechnung des Loss
+    train_loss = np.mean((y_train - y_train_pred)**2)
+    test_loss = np.mean((y_test - y_test_pred)**2)
+    fig.add_annotation(xref="paper", yref="paper", x=0.5, y=0.9,
+                       text=f"Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}",
+                       showarrow=False, font=dict(size=12))
     
     return fig
 
@@ -59,41 +65,37 @@ def main(N, V, X_min, X_max, hidden_layers, neurons_per_layer, learning_rate, ep
     
     # Modell für Noiseless Data trainieren
     model_noiseless = create_and_train_model(train_data, hidden_layers, neurons_per_layer, learning_rate, epochs, batch_size)
-    fig_noiseless_train = plot_predictions(train_data, train_data, model_noiseless, "Train Data - Noiseless")
-    fig_noiseless_test = plot_predictions(test_data, test_data, model_noiseless, "Test Data - Noiseless")
+    fig_noiseless = plot_predictions(train_data, test_data, model_noiseless, "Noiseless Data - Train and Test Predictions")
     
-    # Modell für Noisy Data trainieren
-    model_noisy = create_and_train_model(noisy_train_data, hidden_layers, neurons_per_layer, learning_rate, epochs, batch_size)
-    fig_noisy_train = plot_predictions(noisy_train_data, noisy_train_data, model_noisy, "Train Data - Noisy")
-    fig_noisy_test = plot_predictions(noisy_test_data, noisy_test_data, model_noisy, "Test Data - Noisy")
+    # Modell für Noisy Data trainieren (Best-Fit)
+    model_noisy_best_fit = create_and_train_model(noisy_train_data, hidden_layers, neurons_per_layer, learning_rate, epochs, batch_size)
+    fig_noisy_best_fit = plot_predictions(noisy_train_data, noisy_test_data, model_noisy_best_fit, "Noisy Data - Best-Fit Predictions")
     
     # Modell für Overfitting mit Noisy Data trainieren
-    model_overfit = create_and_train_model(noisy_train_data, hidden_layers, neurons_per_layer, learning_rate, overfit_epochs, batch_size)
-    fig_overfit = plot_predictions(noisy_test_data, noisy_test_data, model_overfit, "Overfit - Noisy Data")
+    model_noisy_overfit = create_and_train_model(noisy_train_data, hidden_layers, neurons_per_layer, learning_rate, overfit_epochs, batch_size)
+    fig_noisy_overfit = plot_predictions(noisy_train_data, noisy_test_data, model_noisy_overfit, "Noisy Data - Overfit Predictions")
     
-    return fig_noiseless_train, fig_noiseless_test, fig_noisy_train, fig_noisy_test, fig_overfit
+    return fig_noiseless, fig_noisy_best_fit, fig_noisy_overfit
 
 # Gradio Interface
 interface = gr.Interface(
     fn=main,
     inputs=[
-        gr.Slider(10, 1000, value=100, label="Data Points (N)"),
+        gr.Slider(50, 500, value=100, label="Data Points (N)"),
         gr.Slider(0.01, 1.0, value=0.05, label="Noise Variance (V)"),
         gr.Slider(-5, 0, value=-2, step=0.1, label="X Min"),
         gr.Slider(0, 5, value=2, step=0.1, label="X Max"),
         gr.Slider(1, 10, value=2, label="Hidden Layers"),
-        gr.Slider(10, 400, value=100, label="Neurons per Layer"),
+        gr.Slider(10, 200, value=100, label="Neurons per Layer"),
         gr.Slider(0.001, 0.1, value=0.01, step=0.001, label="Learning Rate"),
         gr.Slider(10, 1000, value=100, label="Epochs"),
         gr.Slider(10, 1000, value=500, label="Overfit Epochs"),
         gr.Slider(1, 128, value=32, label="Batch Size")
     ],
     outputs=[
-        gr.Plot(label="Train Data - Noiseless"),
-        gr.Plot(label="Test Data - Noiseless"),
-        gr.Plot(label="Train Data - Noisy"),
-        gr.Plot(label="Test Data - Noisy"),
-        gr.Plot(label="Overfit - Noisy Data")
+        gr.Plot(label="Noiseless Data - Train and Test Predictions"),
+        gr.Plot(label="Noisy Data - Best-Fit Predictions"),
+        gr.Plot(label="Noisy Data - Overfit Predictions")
     ],
     title="FFNN Regression with TensorFlow and Plotly",
     description="Train and visualize regression models using Feed-Forward Neural Network (FFNN) on noisy and noiseless data."
