@@ -293,7 +293,6 @@ def interactive_plot(N, variance, x_min, x_max, layers, neurons, learning_rate, 
 data_inputs = [
     gr.Slider(50, 200, step=1, value=100, label="Data Points (N)"),
     gr.Slider(0.01, 0.1, step=0.01, value=0.05, label="Noise Variance (V)"),
-    gr.Slider(-3.0, 3
     gr.Slider(-3.0, 3.0, step=0.1, value=-2.0, label="Minimum X Value"),
     gr.Slider(-3.0, 3.0, step=0.1, value=2.0, label="Maximum X Value"),
     gr.Slider(1, 5, step=1, value=2, label="Number of Layers"),
