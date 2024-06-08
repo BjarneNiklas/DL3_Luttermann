@@ -1,3 +1,53 @@
+import numpy as np
+
+# Funktion zur Erzeugung der Daten
+def generate_data(N=100, noise_variance=0.05):
+    x_values = np.random.uniform(-2, 2, N)
+    y_values = 0.5 * (x_values + 0.8) * (x_values + 1.8) * (x_values - 0.2) * (x_values - 0.3) * (x_values - 1.9) + 1
+    y_values_noisy = y_values + np.random.normal(0, np.sqrt(noise_variance), N)
+    return x_values, y_values, y_values_noisy
+
+# Daten generieren
+x, y, y_noisy = generate_data()
+
+
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+
+# Modell definieren
+def build_model():
+    model = keras.Sequential([
+        layers.Dense(100, activation='relu', input_shape=[1]),
+        layers.Dense(100, activation='relu'),
+        layers.Dense(1, activation='linear')
+    ])
+    
+    optimizer = tf.keras.optimizers.Adam(0.01)
+    
+    model.compile(loss='mse',
+                  optimizer=optimizer,
+                  metrics=['mae', 'mse'])
+    return model
+
+# Modell instanziieren
+model = build_model()
+
+# Modell trainieren
+history = model.fit(
+    x, y_noisy,
+    epochs=100,
+    validation_split=0.2,
+    verbose=0
+)
+
+import plotly.express as px
+
+# Daten visualisieren
+fig = px.scatter(x=x, y=y_noisy, title='Trainingsdaten mit Rauschen')
+fig.show()
+
+
 import gradio as gr
 
 # Funktion, die das Modell verwendet, um Vorhersagen zu treffen
