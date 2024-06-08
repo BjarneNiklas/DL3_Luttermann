@@ -100,12 +100,15 @@ def plot_results(x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy, 
 
 # Gradio Interface
 def interactive_plot(N, variance, x_min, x_max, layers, neurons, learning_rate, epochs, epochs_overfit, batch_size):
-    x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy = prepare_data(N, variance, x_min, x_max)
-    model_unverrauscht, model_best_fit, model_over_fit = train_models(
-        x_train, y_train, y_train_noisy, epochs, epochs_overfit, neurons, layers, learning_rate, batch_size
-    )
-    fig = plot_results(x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy, model_unverrauscht, model_best_fit, model_over_fit)
-    return fig
+    try:
+        x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy = prepare_data(N, variance, x_min, x_max)
+        model_unverrauscht, model_best_fit, model_over_fit = train_models(
+            x_train, y_train, y_train_noisy, epochs, epochs_overfit, neurons, layers, learning_rate, batch_size
+        )
+        fig = plot_results(x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy, model_unverrauscht, model_best_fit, model_over_fit)
+        return fig
+    except Exception as e:
+        return str(e)
 
 data_inputs = [
     gr.Slider(50, 200, step=1, value=100, label="Data Points (N)"),
@@ -131,6 +134,7 @@ interface = gr.Interface(
 )
 
 interface.launch()
+
 
 
 
