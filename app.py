@@ -297,7 +297,10 @@ model_inputs = [
 interface = gr.Interface(
     fn=interactive_plot, 
     inputs=data_inputs + model_inputs, 
-
+    outputs="plot",
+    title="FFNN Regression with TensorFlow.js",
+    description="Visualize the training and test results of different FFNN models."
+).launch()
 
 
 
