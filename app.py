@@ -1,4 +1,4 @@
-import numpy as np
+""" import numpy as np
 import tensorflow as tf
 import gradio as gr
 import matplotlib.pyplot as plt
@@ -100,4 +100,72 @@ gr.Interface(
     outputs="plot",
     title="FFNN Regression with TensorFlow.js",
     description="Visualize the training and test results of different FFNN models."
-).launch()
+).launch()"""
+
+import tensorflow as tf
+import numpy as np
+import matplotlib.pyplot as plt
+from plotly.graph_objects import Scatter, Line
+
+# Funktion y(x)
+def y(x):
+  return 0.5 * (x + 0.8) * (x + 1.8) * (x - 0.2) * (x - 0.3) * (x - 1.9) + 1
+
+# Datenerzeugung
+N = 100
+x = np.random.uniform(-2, 2, N)
+y = y(x)
+
+train_x = x[:50]
+train_y = y[:50]
+
+test_x = x[50:]
+test_y = y[50:]
+
+noise = np.random.normal(0, 0.05, N)
+
+train_y_noisy = train_y + noise
+test_y_noisy = test_y + noise
+
+# Modellarchitektur
+model = tf.keras.Sequential([
+  tf.keras.layers.Dense(100, activation='relu', input_shape=(1,)),
+  tf.keras.layers.Dense(100, activation='relu'),
+  tf.keras.layers.Dense(1, activation='linear')
+])
+
+# Modellkompilierung
+model.compile(loss='mse', optimizer='adam', learning_rate=0.01)
+
+# Training des Modells
+model.fit(train_x[:, np.newaxis], train_y_noisy, epochs=100, batch_size=32)
+
+# Evaluation und Visualisierung
+train_loss = model.evaluate(train_x[:, np.newaxis], train_y_noisy)
+test_loss = model.evaluate(test_x[:, np.newaxis], test_y_noisy)
+
+print('Train Loss:', train_loss)
+print('Test Loss:', test_loss)
+
+# Plotten der Daten, des Loss und der Vorhersagen
+plt.scatter(x, y, label='Original Data')
+plt.scatter(x, y_noisy, label='Noisy Data')
+
+y_unnoisy_pred = model.predict(x[:, np.newaxis])
+plt.plot(x, y_unnoisy_pred, label='Un-Noisy Prediction')
+
+y_best_pred = model.predict(train_x[:, np.newaxis])
+plt.plot(train_x, y_best_pred, label='Best Model Prediction')
+
+y_overfit_pred = model.predict(train_x[:, np.newaxis])
+plt.plot(train_x, y_overfit_pred, label='Overfit Model Prediction')
+
+plt.legend()
+plt.show()
+
+# Diskussion
+# Hier die Ergebnisse und Beobachtungen diskutieren, insbesondere das Phänomen des Overfittings.
+
+# Dokumentation
+# Code, Bibliotheken und Ergebnisse dokumentieren.
+
