@@ -115,28 +115,27 @@ def gradio_ui(data_settings, model_settings):
     fig_noisy, fig_clean, figs = plot_data(x_train, y_train, y_train_noisy, x_test, y_test, y_test_noisy, [pred_clean, pred_best, pred_overfit])
 
     # Ausgabe
-    with gr.Blocks():
-    with gr.Row():
-        with gr.Column():
-            data_settings = gr.Group([
-                gr.Slider(10, 1000, value=100, step=10, label="Anzahl Datenpunkte (N)"),
-                gr.Slider(-5, 5, value=-2, label="x_min"),
-                gr.Slider(-5, 5, value=2, label="x_max"),
-                gr.Slider(0, 1, value=0.05, step=0.01, label="Rauschen-Varianz (V)")
-            ])
-            data_settings.label = "Data Settings"
-        with gr.Column():
-            model_settings = gr.Group([
-                gr.Slider(10, 200, value=100, step=10, label="Anzahl versteckter Neuronen"),
-                gr.Slider(10, 1000, value=100, step=10, label="Epochen (unverrauscht)"),
-                gr.Slider(10, 1000, value=200, step=10, label="Epochen (Best-Fit)"),
-                gr.Slider(10, 1000, value=500, step=10, label="Epochen (Overfit)")
-            ])
-            model_settings.label = "Model Training Settings"
+    with gr.Blocks() as blocks:
+        with gr.Row():
+            with gr.Column():
+                data_settings = gr.Group([
+                    gr.Slider(10, 1000, value=100, step=10, label="Anzahl Datenpunkte (N)"),
+                    gr.Slider(-5, 5, value=-2, label="x_min"),
+                    gr.Slider(-5, 5, value=2, label="x_max"),
+                    gr.Slider(0, 1, value=0.05, step=0.01, label="Rauschen-Varianz (V)")
+                ])
+                data_settings.label = "Data Settings"
+            with gr.Column():
+                model_settings = gr.Group([
+                    gr.Slider(10, 200, value=100, step=10, label="Anzahl versteckter Neuronen"),
+                    gr.Slider(10, 1000, value=100, step=10, label="Epochen (unverrauscht)"),
+                    gr.Slider(10, 1000, value=200, step=10, label="Epochen (Best-Fit)"),
+                    gr.Slider(10, 1000, value=500, step=10, label="Epochen (Overfit)")
+                ])
+                model_settings.label = "Model Training Settings"
 
     output = gr.Markdown()
     gr.Interface(gradio_ui, inputs=[data_settings, model_settings], outputs=output, layout="horizontal", title="Regression mit Feed-Forward Neural Network").launch()
-
 
 """import numpy as np
 import tensorflow as tf
