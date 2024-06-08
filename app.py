@@ -1,124 +1,14 @@
 import gradio as gr
-import numpy as np
-import tensorflow as tf
-import plotly.graph_objs as go
 
-# Funktion zur Datengenerierung
-def generate_data(N=100, V=0.05, X_min=-2, X_max=2):
-    # Zufällige x-Werte aus dem Intervall generieren
-    x_values = np.sort(np.random.uniform(X_min, X_max, N))
-    # Berechnung der Ground-Truth Funktion
-    y_values = 0.5 * (x_values + 0.8) * (x_values + 1.8) * (x_values - 0.2) * (x_values - 0.3) * (x_values - 1.9) + 1
-    # Hinzufügen von normalverteiltem Rauschen
-    y_values_noisy = y_values + np.random.normal(0, np.sqrt(V), N)
-    
-    # Zufällige, gleichmäßige Aufteilung in Trainings- und Testdaten
-    indices = np.random.permutation(N)
-    split_index = N // 2
-    train_indices, test_indices = indices[:split_index], indices[split_index:]
-    
-    x_train, y_train = x_values[train_indices], y_values[train_indices]
-    x_test, y_test = x_values[test_indices], y_values[test_indices]
-    y_noisy_train, y_noisy_test = y_values_noisy[train_indices], y_values_noisy[test_indices]
-    
-    return (x_train, y_train), (x_test, y_test), (x_train, y_noisy_train), (x_test, y_noisy_test)
+# Funktion, die das Modell verwendet, um Vorhersagen zu treffen
+def predict(x_test):
+    y_pred = model.predict(x_test)
+    return y_pred
 
-# Funktion zur Erstellung und Training des Modells
-def create_and_train_model(train_data, hidden_layers, neurons_per_layer, learning_rate, epochs, batch_size):
-    model = tf.keras.Sequential()
-    model.add(tf.keras.layers.InputLayer(input_shape=(1,)))
-    for _ in range(hidden_layers):
-        model.add(tf.keras.layers.Dense(neurons_per_layer, activation='relu'))
-    model.add(tf.keras.layers.Dense(1))
-    
-    optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
-    model.compile(optimizer=optimizer, loss='mean_squared_error')
-    
-    x_train, y_train = train_data
-    model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size, verbose=0)
-    
-    return model
+# Gradio Interface erstellen
+iface = gr.Interface(fn=predict, inputs="number", outputs="number")
+iface.launch()
 
-# Funktion zur Vorhersage und Plot-Generierung
-def plot_predictions(x_train, y_train, x_test, y_test, model, title):
-    y_pred_train = model.predict(x_train).flatten()
-    y_pred_test = model.predict(x_test).flatten()
-    
-    trace_train_data = go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data', marker=dict(color='blue'))
-    trace_test_data = go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data', marker=dict(color='red'))
-    trace_train_pred = go.Scatter(x=x_train, y=y_pred_train, mode='lines', name='Train Prediction', line=dict(color='blue', dash='dash'))
-    trace_test_pred = go.Scatter(x=x_test, y=y_pred_test, mode='lines', name='Test Prediction', line=dict(color='red', dash='dash'))
-
-    layout = go.Layout(title=title, xaxis={'title': 'x'}, yaxis={'title': 'y'})
-    fig = go.Figure(data=[trace_train_data, trace_test_data, trace_train_pred, trace_test_pred], layout=layout)
-    
-    return fig
-
-# Funktion zur Berechnung des Loss
-def compute_loss(y_true, y_pred):
-    return np.mean((y_true - y_pred)**2)
-
-# Hauptfunktion zur Verarbeitung der Eingaben und Rückgabe der Plots
-def main(N, V, X_min, X_max, hidden_layers, neurons_per_layer, learning_rate, epochs, overfit_epochs, batch_size):
-    # Daten generieren
-    (x_train, y_train), (x_test, y_test), (x_train_noisy, y_train_noisy), (x_test_noisy, y_test_noisy) = generate_data(N, V, X_min, X_max)
-    
-    # Plot für noiseless Data
-    noiseless_plot = go.Figure()
-    noiseless_plot.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data', marker=dict(color='blue')))
-    noiseless_plot.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data', marker=dict(color='red')))
-    noiseless_plot.update_layout(title="Noiseless Datasets", xaxis_title='x', yaxis_title='y')
-
-    # Plot für noisy Data
-    noisy_plot = go.Figure()
-    noisy_plot.add_trace(go.Scatter(x=x_train_noisy, y=y_train_noisy, mode='markers', name='Train Data', marker=dict(color='blue')))
-    noisy_plot.add_trace(go.Scatter(x=x_test_noisy, y=y_test_noisy, mode='markers', name='Test Data', marker=dict(color='red')))
-    noisy_plot.update_layout(title="Noisy Datasets", xaxis_title='x', yaxis_title='y')
-    
-    # Modell für noiseless Data trainieren
-    model_noiseless = create_and_train_model((x_train, y_train), hidden_layers, neurons_per_layer, learning_rate, epochs, batch_size)
-    noiseless_predictions_plot = plot_predictions(x_train, y_train, x_test, y_test, model_noiseless, "Unnoisy Model Predictions")
-
-    # Modell für noisy Data trainieren (Best-Fit)
-    model_noisy_best_fit = create_and_train_model((x_train_noisy, y_train_noisy), hidden_layers, neurons_per_layer, learning_rate, 200, batch_size)  # Epochen auf 200 gesetzt
-    best_fit_predictions_plot = plot_predictions(x_train_noisy, y_train_noisy, x_test_noisy, y_test_noisy, model_noisy_best_fit, "Best-Fit Predictions")
-    
-    # Modell für Overfitting mit Noisy Data trainieren
-    model_noisy_overfit = create_and_train_model((x_train_noisy, y_train_noisy), hidden_layers, neurons_per_layer, learning_rate, overfit_epochs, batch_size)
-    overfit_predictions_plot = plot_predictions(x_train_noisy, y_train_noisy, x_test_noisy, y_test_noisy, model_noisy_overfit, "Overfit Predictions")
-    
-    return noiseless_plot, noisy_plot, noiseless_predictions_plot, best_fit_predictions_plot, overfit_predictions_plot
-
-# Gradio Interface
-interface = gr.Interface(
-    fn=main,
-    inputs=[
-        gr.Slider(50, 500, value=100, label="Data Points (N)"),
-        gr.Slider(0.01, 1.0, value=0.05, label="Noise Variance (V)"),
-        gr.Slider(-5, 5, value=-2, step=0.1, label="X Min"),  # X_min angepasst
-        gr.Slider(0, 10, value=2, step=0.1, label="X Max"),  # X_max angepasst
-        gr.Slider(1, 10, value=2, label="Hidden Layers"),
-        gr.Slider(10, 200, value=100, label="Neurons per Layer"),
-        gr.Slider(0.001, 0.1, value=0.01, step=0.001, label="Learning Rate"),
-        gr.Slider(10, 1000, value=100, label="Epochs"),
-        gr.Slider(10, 1000, value=500, label="Overfit Epochs"),
-        gr.Slider(1, 128, value=32, label="Batch Size")
-    ],
-    outputs=[
-        gr.Plot(label="Noiseless Datasets"),
-        gr.Plot(label="Noisy Datasets"),
-        gr.Plot(label="Unnoisy Model Predictions"),
-        gr.Plot(label="Best-Fit Predictions"),
-        gr.Plot(label="Overfit Predictions")
-    ],
-    #layout="2-left-3-right",  # Layout anpassen
-    title="FFNN Regression with TensorFlow and Plotly",
-    description="Train and visualize regression models using Feed-Forward"
-)
-
-# Start Gradio Interface
-if __name__ == "__main__":
-    interface.launch()
 
 
 """import numpy as np
