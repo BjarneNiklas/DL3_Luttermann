@@ -37,8 +37,7 @@ def plot_data(x_train, y_train, x_test, y_test, y_true, title):
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data', marker=dict(color='blue')))
     fig.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data', marker=dict(color='red')))
-    fig.add_trace(go.Scatter(x=np.sort(x_train), y=y_true[np.argsort(x_train)], mode='lines', name='True Function (Train)', line=dict(color='green')))
-    fig.add_trace(go.Scatter(x=np.sort(x_test), y=y_true[np.argsort(x_test)], mode='lines', name='True Function (Test)', line=dict(color='orange')))
+    fig.add_trace(go.Scatter(x=np.sort(x_train), y=y_true[np.argsort(x_train)], mode='lines', name='True Function', line=dict(color='green')))
     fig.update_layout(title=title, xaxis_title='x', yaxis_title='y')
     return fig
 
@@ -52,49 +51,49 @@ def plot_predictions(model, x_train, y_train, x_test, y_test, y_true, title):
     fig.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data', marker=dict(color='red')))
     fig.add_trace(go.Scatter(x=np.sort(x_train), y=y_pred_train[np.argsort(x_train)], mode='lines', name='Pred Train', line=dict(color='purple')))
     fig.add_trace(go.Scatter(x=np.sort(x_test), y=y_pred_test[np.argsort(x_test)], mode='lines', name='Pred Test', line=dict(color='orange')))
-    fig.add_trace(go.Scatter(x=np.sort(x_train), y=y_true[np.argsort(x_train)], mode='lines', name='True Function (Train)', line=dict(color='green')))
-    fig.add_trace(go.Scatter(x=np.sort(x_test), y=y_true[np.argsort(x_test)], mode='lines', name='True Function (Test)', line=dict(color='orange')))
+    fig.add_trace(go.Scatter(x=np.sort(x_train), y=y_true[np.argsort(x_train)], mode='lines', name='True Function', line=dict(color='green')))
     fig.update_layout(title=title, xaxis_title='x', yaxis_title='y')
     return fig
 
 def main(N=100, noise_variance=0.05, x_min=-2, x_max=2, hidden_layers=2, neurons_per_layer=100, learning_rate=0.01, epochs_best=100, epochs_overfit=1000, batch_size=32):
     (x_train, y_train), (x_test, y_test), (x, y_true) = generate_data(N, noise_variance, x_min, x_max)
     
+    # Trainiere das Modell ohne Rauschen
+    model_unnoisy, _ = create_and_train_model(x_train, y_true[train_indices], hidden_layers, neurons_per_layer, learning_rate, epochs_best, batch_size)
+    
+    # Trainiere die Modelle mit Rauschen
     model_best, _ = create_and_train_model(x_train, y_train, hidden_layers, neurons_per_layer, learning_rate, epochs_best, batch_size)
     model_overfit, _ = create_and_train_model(x_train, y_train, hidden_layers, neurons_per_layer, learning_rate, epochs_overfit, batch_size)
     
-    fig_data_no_noise = plot_data(x_train, y_train, x_test, y_test, y_true, 'Noiseless Datasets')
-    fig_data_with_noise = plot_data(x_train, y_train, x_test, y_test, y_train, 'Noisy Datasets')
+    fig_data_no_noise = plot_data(x_train, y_true[train_indices], x_test, y_true[test_indices], y_true, 'Noiseless Datasets')
+    fig_data_with_noise = plot_data(x_train, y_train, x_test, y_test, y_true, 'Noisy Datasets')
     
-    fig_pred_best_train = plot_predictions(model_best, x_train, y_train, x_test, y_test, y_true, 'Predictions (Best-Fit Model, Train Data)')
-    fig_pred_best_test = plot_predictions(model_best, x_train, y_train, x_test, y_test, y_true, 'Predictions (Best-Fit Model, Test Data)')
+    fig_pred_unnoisy = plot_predictions(model_unnoisy, x_train, y_true[train_indices], x_test, y_true[test_indices], y_true, 'Predictions (Unnoisy Model)')
+    fig_pred_best = plot_predictions(model_best, x_train, y_train, x_test, y_test, y_true, 'Predictions (Best-Fit Model)')
+    fig_pred_overfit = plot_predictions(model_overfit, x_train, y_train, x_test, y_test, y_true, 'Predictions (Overfit Model)')
     
-    fig_pred_overfit_train = plot_predictions(model_overfit, x_train, y_train, x_test, y_test, y_true, 'Predictions (Overfit Model, Train Data)')
-    fig_pred_overfit_test = plot_predictions(model_overfit, x_train, y_train, x_test, y_test, y_true, 'Predictions (Overfit Model, Test Data)')
-    
-    return fig_data_no_noise, fig_data_with_noise, fig_pred_best_train, fig_pred_best_test, fig_pred_overfit_train, fig_pred_overfit_test
+    return fig_data_no_noise, fig_data_with_noise, fig_pred_unnoisy, fig_pred_best, fig_pred_overfit
 
 # Gradio UI
 inputs = [
-    gr.components.Slider(minimum=10, maximum=500, default=100, label="Data Points (N)"),
-    gr.components.Slider(minimum=0.0, maximum=1.0, default=0.05, label="Noise Variance (V)"),
-    gr.components.Slider(minimum=-10.0, maximum=0.0, default=-2.0, label="X Min"),
-    gr.components.Slider(minimum=0.0, maximum=10.0, default=2.0, label="X Max"),
-    gr.components.Slider(minimum=1, maximum=10, default=2, label="Hidden Layers"),
-    gr.components.Slider(minimum=10, maximum=500, default=100, label="Neurons per Layer"),
-    gr.components.Slider(minimum=0.0001, maximum=0.1, default=0.01, label="Learning Rate"),
-    gr.components.Slider(minimum=10, maximum=1000, default=100, label="Epochs (Best Fit Model)"),
-    gr.components.Slider(minimum=10, maximum=5000, default=1000, label="Epochs (Overfit Model)"),
-    gr.components.Slider(minimum=1, maximum=128, default=32, label="Batch Size")
+    gr.Slider(minimum=10, maximum=500, default=100, label="Data Points (N)"),
+    gr.Slider(minimum=0.0, maximum=1.0, default=0.05, label="Noise Variance (V)"),
+    gr.Slider(minimum=-10.0, maximum=0.0, default=-2.0, label="X Min"),
+    gr.Slider(minimum=0.0, maximum=10.0, default=2.0, label="X Max"),
+    gr.Slider(minimum=1, maximum=10, default=2, label="Hidden Layers"),
+    gr.Slider(minimum=10, maximum=500, default=100, label="Neurons per Layer"),
+    gr.Slider(minimum=0.0001, maximum=0.1, default=0.01, label="Learning Rate"),
+    gr.Slider(minimum=10, maximum=1000, default=100, label="Epochs (Best Fit Model)"),
+    gr.Slider(minimum=10, maximum=5000, default=1000, label="Epochs (Overfit Model)"),
+    gr.Slider(minimum=1, maximum=128, default=32, label="Batch Size")
 ]
 
 outputs = [
-    gr.components.Plot(label="Noiseless Datasets"),
-    gr.components.Plot(label="Noisy Datasets"),
-    gr.components.Plot(label="Predictions (Best-Fit Model, Train Data)"),
-    gr.components.Plot(label="Predictions (Best-Fit Model, Test Data)"),
-    gr.components.Plot(label="Predictions (Overfit Model, Train Data)"),
-    gr.components.Plot(label="Predictions (Overfit Model, Test Data)")
+    gr.Plot(label="Noiseless Datasets"),
+    gr.Plot(label="Noisy Datasets"),
+    gr.Plot(label="Predictions (Unnoisy Model)"),
+    gr.Plot(label="Predictions (Best-Fit Model)"),
+    gr.Plot(label="Predictions (Overfit Model)")
 ]
 
 gr.Interface(fn=main, inputs=inputs, outputs=outputs, title="Regression with FFNN and TensorFlow.js", description="Train and evaluate FFNN models on synthetic data with and without noise.").launch()
