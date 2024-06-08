@@ -76,16 +76,16 @@ def main(N=100, noise_variance=0.05, x_min=-2, x_max=2, hidden_layers=2, neurons
 
 # Gradio UI
 inputs = [
-    gr.Slider(minimum=10, maximum=500, default=100, label="Data Points (N)"),
-    gr.Slider(minimum=0.0, maximum=1.0, default=0.05, label="Noise Variance (V)"),
-    gr.Slider(minimum=-10.0, maximum=0.0, default=-2.0, label="X Min"),
-    gr.Slider(minimum=0.0, maximum=10.0, default=2.0, label="X Max"),
-    gr.Slider(minimum=1, maximum=10, default=2, label="Hidden Layers"),
-    gr.Slider(minimum=10, maximum=500, default=100, label="Neurons per Layer"),
-    gr.Slider(minimum=0.0001, maximum=0.1, default=0.01, label="Learning Rate"),
-    gr.Slider(minimum=10, maximum=1000, default=100, label="Epochs (Best Fit Model)"),
-    gr.Slider(minimum=10, maximum=5000, default=1000, label="Epochs (Overfit Model)"),
-    gr.Slider(minimum=1, maximum=128, default=32, label="Batch Size")
+    gr.Slider(minimum=10, maximum=500, value=100, label="Data Points (N)"),
+    gr.Slider(minimum=0.0, maximum=1.0, value=0.05, label="Noise Variance (V)"),
+    gr.Slider(minimum=-10.0, maximum=0.0, value=-2.0, label="X Min"),
+    gr.Slider(minimum=0.0, maximum=10.0, value=2.0, label="X Max"),
+    gr.Slider(minimum=1, maximum=10, value=2, label="Hidden Layers"),
+    gr.Slider(minimum=10, maximum=500, value=100, label="Neurons per Layer"),
+    gr.Slider(minimum=0.0001, maximum=0.1, value=0.01, label="Learning Rate"),
+    gr.Slider(minimum=10, maximum=1000, value=200, label="Epochs"),
+    gr.Slider(minimum=10, maximum=5000, value=500, label="Epochs (Overfit Model)"),
+    gr.Slider(minimum=1, maximum=128, value=32, label="Batch Size")
 ]
 
 outputs = [
