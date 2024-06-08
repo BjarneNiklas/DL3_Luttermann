@@ -83,7 +83,7 @@ def train_and_plot(N, noise_variance, epochs_best_fit, epochs_overfit):
     fig7 = create_plot(x_train, y_train, y_noisy_train, y_pred_overfit_train, f"Overfit Model (Train) - MSE: {loss_overfit_train:.4f}")
     fig8 = create_plot(x_test, y_test, y_noisy_test, y_pred_overfit_test, f"Overfit Model (Test) - MSE: {loss_overfit_test:.4f}")
     
-    return [fig1, fig2, fig3, fig4, fig5, fig6, fig7, fig8]
+    return fig1, fig2, fig3, fig4, fig5, fig6, fig7, fig8
 
 # Gradio Interface
 def gradio_interface():
@@ -95,18 +95,31 @@ def gradio_interface():
             epochs_best_fit = gr.Slider(50, 500, value=200, step=10, label="Epochs (Best-Fit)")
             epochs_overfit = gr.Slider(50, 500, value=500, step=10, label="Epochs (Overfit)")
         
-        plots = gr.Plot.update()
+        plot1 = gr.Plot(label="Data without noise")
+        plot2 = gr.Plot(label="Data with noise")
+        plot3 = gr.Plot(label="Model without noise (Train)")
+        plot4 = gr.Plot(label="Model without noise (Test)")
+        plot5 = gr.Plot(label="Best-Fit Model (Train)")
+        plot6 = gr.Plot(label="Best-Fit Model (Test)")
+        plot7 = gr.Plot(label="Overfit Model (Train)")
+        plot8 = gr.Plot(label="Overfit Model (Test)")
         
-        gr.Button("Train and Plot").click(
-            train_and_plot, 
+        def update_plots(N, noise_variance, epochs_best_fit, epochs_overfit):
+            fig1, fig2, fig3, fig4, fig5, fig6, fig7, fig8 = train_and_plot(N, noise_variance, epochs_best_fit, epochs_overfit)
+            return fig1, fig2, fig3, fig4, fig5, fig6, fig7, fig8
+        
+        update_btn = gr.Button("Train and Plot")
+        update_btn.click(
+            update_plots,
             inputs=[N, noise_variance, epochs_best_fit, epochs_overfit],
-            outputs=plots,
+            outputs=[plot1, plot2, plot3, plot4, plot5, plot6, plot7, plot8]
         )
     
     return demo
 
 demo = gradio_interface()
 demo.launch()
+
 
 
 
