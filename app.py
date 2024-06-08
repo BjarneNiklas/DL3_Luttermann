@@ -1,142 +1,121 @@
 import numpy as np
 import tensorflow as tf
-import plotly.graph_objects as go
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.optimizers import Adam
+import plotly.graph_objs as go
 import gradio as gr
 
-# Funktion zur Datengenerierung
+# Generate data
 def generate_data(N=100, noise_variance=0.05):
     np.random.seed(0)
-    x = np.random.uniform(-2, 2, N)
-    y = 0.5 * (x + 0.8) * (x + 1.8) * (x - 0.2) * (x - 0.3) * (x - 1.9) + 1
-    y_noisy = y + np.random.normal(0, np.sqrt(noise_variance), N)
-    
-    # Aufteilung in Trainings- und Testdaten
-    indices = np.random.permutation(N)
-    train_idx, test_idx = indices[:N//2], indices[N//2:]
-    x_train, y_train = x[train_idx], y[train_idx]
-    x_test, y_test = x[test_idx], y[test_idx]
-    
-    y_train_noisy, y_test_noisy = y_noisy[train_idx], y_noisy[test_idx]
-    
-    return (x_train, y_train, y_train_noisy), (x_test, y_test, y_test_noisy)
+    X = np.random.uniform(-2, 2, N)
+    y = 0.5 * (X + 0.8) * (X + 1.8) * (X - 0.2) * (X - 0.3) * (X - 1.9) + 1
+    train_indices = np.random.choice(N, N//2, replace=False)
+    test_indices = np.setdiff1d(np.arange(N), train_indices)
+    X_train, y_train = X[train_indices], y[train_indices]
+    X_test, y_test = X[test_indices], y[test_indices]
+    y_train_noisy = y_train + np.random.normal(0, noise_variance, len(y_train))
+    y_test_noisy = y_test + np.random.normal(0, noise_variance, len(y_test))
+    return X_train, y_train, y_train_noisy, X_test, y_test, y_test_noisy
 
-# Generierung der Daten
-train_data, test_data = generate_data()
-
-
-
-# Modell-Architektur
+# Define the model
 def create_model():
-    model = tf.keras.Sequential([
-        tf.keras.layers.Dense(100, activation='relu', input_shape=(1,)),
-        tf.keras.layers.Dense(100, activation='relu'),
-        tf.keras.layers.Dense(1, activation=None)
+    model = Sequential([
+        Dense(100, activation='relu', input_shape=(1,)),
+        Dense(100, activation='relu'),
+        Dense(1, activation='linear')
     ])
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), loss='mse')
+    model.compile(optimizer=Adam(learning_rate=0.01), loss='mean_squared_error')
     return model
 
-# Training des Modells
-def train_model(model, x_train, y_train, epochs):
-    history = model.fit(x_train, y_train, epochs=epochs, batch_size=32, verbose=0)
-    return history
+# Train models
+def train_model(X, y, epochs):
+    model = create_model()
+    model.fit(X, y, epochs=epochs, batch_size=32, verbose=0)
+    return model
 
-# Training der Modelle
-unverrauschtes_model = create_model()
-history_unverrauscht = train_model(unverrauschtes_model, train_data[0], train_data[1], epochs=200)
+# Predict and calculate MSE
+def predict_and_evaluate(model, X_train, y_train, X_test, y_test):
+    y_train_pred = model.predict(X_train).flatten()
+    y_test_pred = model.predict(X_test).flatten()
+    mse_train = np.mean((y_train - y_train_pred)**2)
+    mse_test = np.mean((y_test - y_test_pred)**2)
+    return y_train_pred, y_test_pred, mse_train, mse_test
 
-best_fit_model = create_model()
-history_best_fit = train_model(best_fit_model, train_data[0], train_data[2], epochs=200)
+# Plotly plots
+def plot_data(X, y, title):
+    return go.Figure(data=go.Scatter(x=X, y=y, mode='markers')).update_layout(title=title)
 
-overfit_model = create_model()
-history_overfit = train_model(overfit_model, train_data[0], train_data[2], epochs=500)
+def plot_predictions(X, y_true, y_pred, title):
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=X, y=y_true, mode='markers', name='True'))
+    fig.add_trace(go.Scatter(x=X, y=y_pred, mode='lines', name='Predicted'))
+    fig.update_layout(title=title)
+    return fig
 
-# Funktion zur Visualisierung
-def plot_results(train_data, test_data, models, histories):
-    x_train, y_train, y_train_noisy = train_data
-    x_test, y_test, y_test_noisy = test_data
+def interface(X_min, X_max, N, noise_variance, epochs_best_fit, epochs_overfit):
+    # Generate data
+    X_train, y_train, y_train_noisy, X_test, y_test, y_test_noisy = generate_data(N, noise_variance)
     
-    # Erstellung der Plotly-Figuren
-    fig1 = go.Figure()
-    fig1.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train (clean)'))
-    fig1.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test (clean)'))
-    fig1.update_layout(title='Unverrauschte Daten', xaxis_title='x', yaxis_title='y')
+    # Train models
+    model_unverrauscht = train_model(X_train, y_train, epochs=200)
+    model_best_fit = train_model(X_train, y_train_noisy, epochs=epochs_best_fit)
+    model_overfit = train_model(X_train, y_train_noisy, epochs=epochs_overfit)
     
-    fig2 = go.Figure()
-    fig2.add_trace(go.Scatter(x=x_train, y=y_train_noisy, mode='markers', name='Train (noisy)'))
-    fig2.add_trace(go.Scatter(x=x_test, y=y_test_noisy, mode='markers', name='Test (noisy)'))
-    fig2.update_layout(title='Verrauschte Daten', xaxis_title='x', yaxis_title='y')
+    # Predictions and MSE
+    y_train_pred_unverrauscht, y_test_pred_unverrauscht, mse_train_unverrauscht, mse_test_unverrauscht = predict_and_evaluate(model_unverrauscht, X_train, y_train, X_test, y_test)
+    y_train_pred_best_fit, y_test_pred_best_fit, mse_train_best_fit, mse_test_best_fit = predict_and_evaluate(model_best_fit, X_train, y_train_noisy, X_test, y_test_noisy)
+    y_train_pred_overfit, y_test_pred_overfit, mse_train_overfit, mse_test_overfit = predict_and_evaluate(model_overfit, X_train, y_train_noisy, X_test, y_test_noisy)
     
-    x_vals = np.linspace(-2, 2, 200)
+    # Plotting
+    plots = {
+        'Original Data': plot_data(X_train, y_train, 'Original Data (Train)') \
+                         .add_trace(go.Scatter(x=X_test, y=y_test, mode='markers', name='Test Data')),
+        'Noisy Data': plot_data(X_train, y_train_noisy, 'Noisy Data (Train)') \
+                      .add_trace(go.Scatter(x=X_test, y=y_test_noisy, mode='markers', name='Test Data')),
+        'Unverrauscht Train': plot_predictions(X_train, y_train, y_train_pred_unverrauscht, f'Unverrauscht Train MSE: {mse_train_unverrauscht:.4f}'),
+        'Unverrauscht Test': plot_predictions(X_test, y_test, y_test_pred_unverrauscht, f'Unverrauscht Test MSE: {mse_test_unverrauscht:.4f}'),
+        'Best-Fit Train': plot_predictions(X_train, y_train_noisy, y_train_pred_best_fit, f'Best-Fit Train MSE: {mse_train_best_fit:.4f}'),
+        'Best-Fit Test': plot_predictions(X_test, y_test_noisy, y_test_pred_best_fit, f'Best-Fit Test MSE: {mse_test_best_fit:.4f}'),
+        'Over-Fit Train': plot_predictions(X_train, y_train_noisy, y_train_pred_overfit, f'Over-Fit Train MSE: {mse_train_overfit:.4f}'),
+        'Over-Fit Test': plot_predictions(X_test, y_test_noisy, y_test_pred_overfit, f'Over-Fit Test MSE: {mse_test_overfit:.4f}')
+    }
     
-    # Vorhersagen für die Modelle
-    y_unverrauscht_pred_train = unverrauschtes_model.predict(x_train)
-    y_unverrauscht_pred_test = unverrauschtes_model.predict(x_test)
-    
-    y_best_fit_pred_train = best_fit_model.predict(x_train)
-    y_best_fit_pred_test = best_fit_model.predict(x_test)
-    
-    y_overfit_pred_train = overfit_model.predict(x_train)
-    y_overfit_pred_test = overfit_model.predict(x_test)
-    
-    # Plot der Vorhersagen
-    fig3 = go.Figure()
-    fig3.add_trace(go.Scatter(x=x_train, y=y_unverrauscht_pred_train.flatten(), mode='markers', name='Train Predictions'))
-    fig3.update_layout(title='Vorhersage unverrauschte Daten (Train)', xaxis_title='x', yaxis_title='y')
-    
-    fig4 = go.Figure()
-    fig4.add_trace(go.Scatter(x=x_test, y=y_unverrauscht_pred_test.flatten(), mode='markers', name='Test Predictions'))
-    fig4.update_layout(title='Vorhersage unverrauschte Daten (Test)', xaxis_title='x', yaxis_title='y')
-    
-    fig5 = go.Figure()
-    fig5.add_trace(go.Scatter(x=x_train, y=y_best_fit_pred_train.flatten(), mode='markers', name='Train Predictions'))
-    fig5.update_layout(title='Best-Fit Vorhersage verrauschte Daten (Train)', xaxis_title='x', yaxis_title='y')
-    
-    fig6 = go.Figure()
-    fig6.add_trace(go.Scatter(x=x_test, y=y_best_fit_pred_test.flatten(), mode='markers', name='Test Predictions'))
-    fig6.update_layout(title='Best-Fit Vorhersage verrauschte Daten (Test)', xaxis_title='x', yaxis_title='y')
-    
-    fig7 = go.Figure()
-    fig7.add_trace(go.Scatter(x=x_train, y=y_overfit_pred_train.flatten(), mode='markers', name='Train Predictions'))
-    fig7.update_layout(title='Overfit Vorhersage verrauschte Daten (Train)', xaxis_title='x', yaxis_title='y')
-    
-    fig8 = go.Figure()
-    fig8.add_trace(go.Scatter(x=x_test, y=y_overfit_pred_test.flatten(), mode='markers', name='Test Predictions'))
-    fig8.update_layout(title='Overfit Vorhersage verrauschte Daten (Test)', xaxis_title='x', yaxis_title='y')
-    
-    return fig1, fig2, fig3, fig4, fig5, fig6, fig7, fig8
+    return [plots['Original Data'], plots['Noisy Data'], plots['Unverrauscht Train'], plots['Unverrauscht Test'], 
+            plots['Best-Fit Train'], plots['Best-Fit Test'], plots['Over-Fit Train'], plots['Over-Fit Test']]
 
-    
-# Gradio Interface
-def interface(epochs_best_fit=200, epochs_overfit=500):
-    global unverrauschtes_model, best_fit_model, overfit_model
-    
-    # Training der Modelle mit den angegebenen Epochen
-    best_fit_model = create_model()
-    history_best_fit = train_model(best_fit_model, train_data[0], train_data[2], epochs=epochs_best_fit)
-    
-    overfit_model = create_model()
-    history_overfit = train_model(overfit_model, train_data[0], train_data[2], epochs=epochs_overfit)
-    
-    # Erstellung der Plots
-    plots = plot_results(train_data, test_data, [unverrauschtes_model, best_fit_model, overfit_model], 
-                         [history_unverrauscht, history_best_fit, history_overfit])
-    
-    return plots
-
-# Definition der Gradio Komponenten
+# Gradio interface
 with gr.Blocks() as demo:
+    gr.Markdown("### Regression Learning with Feed-Forward Neural Network")
+    
     with gr.Row():
-        epochs_best_fit = gr.Slider(minimum=50, maximum=300, step=10, value=200, label="Epochs (Best-Fit)")
-        epochs_overfit = gr.Slider(minimum=300, maximum=1000, step=10, value=500, label="Epochs (Over-Fit)")
+        with gr.Column():
+            gr.Markdown("#### Data Settings")
+            X_min = gr.Slider(minimum=-3, maximum=3, value=-2, label="X min")
+            X_max = gr.Slider(minimum=-3, maximum=3, value=2, label="X max")
+            N_slider = gr.Slider(minimum=10, maximum=200, value=100, label="Number of Data Points")
+        
+        with gr.Column():
+            gr.Markdown("#### Model Training Settings")
+            epochs_best_fit = gr.Slider(minimum=10, maximum=1000, value=200, step=10, label="Epochs (Best-Fit)")
+            epochs_overfit = gr.Slider(minimum=10, maximum=1000, value=500, step=10, label="Epochs (Over-Fit)")
     
-    btn = gr.Button("Train Models and Plot Results")
-    output = gr.Plot()
+    with gr.Row():
+        gr.Markdown("### Results")
+        with gr.Column():
+            gr.Plot(value=interface(X_min, X_max, N_slider, 0.05, epochs_best_fit, epochs_overfit)[0])
+            gr.Plot(value=interface(X_min, X_max, N_slider, 0.05, epochs_best_fit, epochs_overfit)[2])
+            gr.Plot(value=interface(X_min, X_max, N_slider, 0.05, epochs_best_fit, epochs_overfit)[4])
+            gr.Plot(value=interface(X_min, X_max, N_slider, 0.05, epochs_best_fit, epochs_overfit)[6])
+        with gr.Column():
+            gr.Plot(value=interface(X_min, X_max, N_slider, 0.05, epochs_best_fit, epochs_overfit)[1])
+            gr.Plot(value=interface(X_min, X_max, N_slider, 0.05, epochs_best_fit, epochs_overfit)[3])
+            gr.Plot(value=interface(X_min, X_max, N_slider, 0.05, epochs_best_fit, epochs_overfit)[5])
+            gr.Plot(value=interface(X_min, X_max, N_slider, 0.05, epochs_best_fit, epochs_overfit)[7])
     
-    btn.click(fn=interface, inputs=[epochs_best_fit, epochs_overfit], outputs=[output])
+    demo.launch()
     
-# Start des Gradio Interfaces
-demo.launch()
-
 
 
 """import numpy as np
