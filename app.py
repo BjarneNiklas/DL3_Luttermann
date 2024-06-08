@@ -5,11 +5,14 @@ import plotly.graph_objs as go
 
 # Funktion zur Datengenerierung
 def generate_data(N=100, V=0.05, X_min=-2, X_max=2):
+    # Zufällige x-Werte aus dem Intervall generieren
     x_values = np.sort(np.random.uniform(X_min, X_max, N))
+    # Berechnung der Ground-Truth Funktion
     y_values = 0.5 * (x_values + 0.8) * (x_values + 1.8) * (x_values - 0.2) * (x_values - 0.3) * (x_values - 1.9) + 1
+    # Hinzufügen von normalverteiltem Rauschen
     y_values_noisy = y_values + np.random.normal(0, np.sqrt(V), N)
     
-    # Zufällige, gleichmäßige Aufteilung der Daten in Trainings- und Testdaten
+    # Zufällige, gleichmäßige Aufteilung in Trainings- und Testdaten
     indices = np.random.permutation(N)
     split_index = N // 2
     train_indices, test_indices = indices[:split_index], indices[split_index:]
@@ -92,8 +95,8 @@ interface = gr.Interface(
     inputs=[
         gr.Slider(50, 500, value=100, label="Data Points (N)"),
         gr.Slider(0.01, 1.0, value=0.05, label="Noise Variance (V)"),
-        gr.Slider(-5, 0, value=-2, step=0.1, label="X Min"),
-        gr.Slider(0, 5, value=2, step=0.1, label="X Max"),
+        gr.Slider(-5, 5, value=-2, step=0.1, label="X Min"),  # X_min angepasst
+        gr.Slider(0, 10, value=2, step=0.1, label="X Max"),  # X_max angepasst
         gr.Slider(1, 10, value=2, label="Hidden Layers"),
         gr.Slider(10, 200, value=100, label="Neurons per Layer"),
         gr.Slider(0.001, 0.1, value=0.01, step=0.001, label="Learning Rate"),
@@ -108,14 +111,9 @@ interface = gr.Interface(
         gr.Plot(label="Best-Fit Predictions"),
         gr.Plot(label="Overfit Predictions")
     ],
+    layout="2-left-3-right",  # Layout anpassen
     title="FFNN Regression with TensorFlow and Plotly",
-    description="Train and visualize regression models using Feed-Forward Neural Network (FFNN) on noisy and noiseless data."
-)
-
-# Start Gradio Interface
-if __name__ == "__main__":
-    interface.launch()
-
+    description="Train and visualize regression models using Feed-Forward
 
 
 
