@@ -1,116 +1,88 @@
 import numpy as np
-import plotly.graph_objs as go
+import tensorflow as tf
+import matplotlib.pyplot as plt
 import gradio as gr
-from tensorflow import keras
-from tensorflow.keras import layers
 
-# Daten generieren
-def generate_data(N, noise_variance, x_min, x_max):
-    x_values = np.linspace(x_min, x_max, N)
-    y_values = 0.5 * (x_values + 0.8) * (x_values + 1.8) * (x_values - 0.2) * (x_values - 0.3) * (x_values - 1.9) + 1
-    noise = np.random.normal(0, np.sqrt(noise_variance), y_values.shape)
-    y_noisy = y_values + noise
-    return x_values, y_values, y_noisy
+# Funktion zur Generierung der Daten
+def generate_data(N=100, noise_variance=0.05):
+    x = np.random.uniform(-2, 2, N)
+    y = 0.5 * (x + 0.8) * (x + 1.8) * (x - 0.2) * (x - 0.3) * (x - 1.9) + 1
+    noise = np.random.normal(0, np.sqrt(noise_variance), y.shape)
+    y_noisy = y + noise
+    
+    return x, y, y_noisy
 
-# Modell definieren
-def build_model(hidden_layers, neurons_per_layer):
-    model = keras.Sequential()
-    model.add(layers.Dense(neurons_per_layer, activation='relu', input_shape=[1]))
-    for _ in range(hidden_layers - 1):
-        model.add(layers.Dense(neurons_per_layer, activation='relu'))
-    model.add(layers.Dense(1, activation='linear'))
-    model.compile(loss='mse', optimizer='adam')
+# Funktion zum Erstellen des Modells
+def create_model():
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(100, activation='relu', input_shape=(1,)),
+        tf.keras.layers.Dense(100, activation='relu'),
+        tf.keras.layers.Dense(1)
+    ])
+    model.compile(optimizer=tf.keras.optimizers.Adam(0.01), loss='mean_squared_error')
     return model
 
-# Daten aufteilen
-def split_data(x_values, y_values, y_noisy):
-    indices = np.arange(x_values.shape[0])
-    np.random.shuffle(indices)
-    train_indices = indices[:N//2]
-    test_indices = indices[N//2:]
-    return (x_values[train_indices], y_values[train_indices], y_noisy[train_indices]), (x_values[test_indices], y_values[test_indices], y_noisy[test_indices])
+# Funktion zum Trainieren des Modells
+def train_model(model, x_train, y_train, epochs):
+    history = model.fit(x_train, y_train, epochs=epochs, batch_size=32, verbose=0)
+    return model, history
 
-# Plots erstellen
-def create_plots(train_data, test_data, model, title):
-    train_x, train_y, train_y_noisy = train_data
-    test_x, test_y, test_y_noisy = test_data
+# Funktion zur Vorhersage und Visualisierung
+def plot_predictions(x_train, y_train, x_test, y_test, model):
+    plt.figure(figsize=(12, 6))
     
-    # Trainingsdaten
-    train_trace_clean = go.Scatter(x=train_x, y=train_y, mode='markers', name='Train Clean', marker=dict(color='rgba(255, 0, 0, .8)'))
-    train_trace_noisy = go.Scatter(x=train_x, y=train_y_noisy, mode='markers', name='Train Noisy', marker=dict(color='rgba(255, 165, 0, .8)'))
+    x_train_pred = model.predict(x_train)
+    x_test_pred = model.predict(x_test)
     
-    # Testdaten
-    test_trace_clean = go.Scatter(x=test_x, y=test_y, mode='markers', name='Test Clean', marker=dict(color='rgba(0, 255, 0, .8)'))
-    test_trace_noisy = go.Scatter(x=test_x, y=test_y_noisy, mode='markers', name='Test Noisy', marker=dict(color='rgba(0, 0, 255, .8)'))
+    plt.subplot(1, 2, 1)
+    plt.scatter(x_train, y_train, label='Train Data')
+    plt.plot(x_train, x_train_pred, color='r', label='Model Prediction')
+    plt.title("Train Data vs Prediction")
+    plt.legend()
     
-    # Vorhersagen
-    x_range = np.linspace(train_x.min(), train_x.max(), 200)
-    predictions = model.predict(x_range)
-    prediction_trace = go.Scatter(x=x_range, y=predictions.flatten(), mode='lines', name='Prediction', line=dict(color='black'))
+    plt.subplot(1, 2, 2)
+    plt.scatter(x_test, y_test, label='Test Data')
+    plt.plot(x_test, x_test_pred, color='r', label='Model Prediction')
+    plt.title("Test Data vs Prediction")
+    plt.legend()
     
-    # Plots zusammenfügen
-    fig = go.Figure(data=[train_trace_clean, train_trace_noisy, test_trace_clean, test_trace_noisy, prediction_trace])
-    fig.update_layout(title=title, xaxis_title='x', yaxis_title='y')
-    
-    return fig
+    plt.tight_layout()
+    plt.show()
 
 # Gradio Interface
-def gradio_interface(model, train_data, test_data):
-    def predict(x):
-        return model.predict(np.array([x])).flatten()[0]
+def gradio_interface(epochs, noise_variance):
+    # Generierung der Daten
+    x, y, y_noisy = generate_data(noise_variance=noise_variance)
+    x_train, y_train = x[:50], y_noisy[:50]
+    x_test, y_test = x[50:], y_noisy[50:]
     
-    demo = gr.Interface(fn=predict, inputs='number', outputs='number')
-    return demo
+    # Erstellung und Training des Modells
+    model = create_model()
+    model, history = train_model(model, x_train, y_train, epochs)
+    
+    # Visualisierung der Vorhersagen
+    plot_predictions(x_train, y_train, x_test, y_test, model)
+    
+    # Berechnung der Verluste
+    train_loss = model.evaluate(x_train, y_train, verbose=0)
+    test_loss = model.evaluate(x_test, y_test, verbose=0)
+    
+    return train_loss, test_loss
 
-# Hauptfunktion
-def main(N, noise_variance, x_min, x_max, hidden_layers, neurons_per_layer, learning_rate, epochs, overfit_epochs, batch_size):
-    # Daten generieren
-    x, y, y_noisy = generate_data(N, noise_variance, x_min, x_max)
-    
-    # Daten aufteilen
-    train_data, test_data = split_data(x, y, y_noisy)
-    
-    # Modelle erstellen und trainieren
-    clean_model = build_model(hidden_layers, neurons_per_layer)
-    clean_model.fit(train_data[0], train_data[1], epochs=epochs, batch_size=batch_size, verbose=0)
-    
-    best_fit_model = build_model(hidden_layers, neurons_per_layer)
-    best_fit_model.fit(train_data[0], train_data[2], epochs=epochs*2, batch_size=batch_size, verbose=0)
-    
-    overfit_model = build_model(hidden_layers, neurons_per_layer)
-    overfit_model.fit(train_data[0], train_data[2], epochs=overfit_epochs, batch_size=batch_size, verbose=0)
-    
-    # Plots erstellen
-    clean_fig = create_plots(train_data, test_data, clean_model, 'Clean Model Predictions')
-    best_fit_fig = create_plots(train_data, test_data, best_fit_model, 'Best Fit Model Predictions')
-    overfit_fig = create_plots(train_data, test_data, overfit_model, 'Overfit Model Predictions')
-    
-    clean_fig.show()
-    best_fit_fig.show()
-    overfit_fig.show()
-    
-    # Gradio Interface starten
-    demo = gradio_interface(clean_model, train_data, test_data)
-    demo.launch()
-
-# Gradio Interface für Einstellungen
-iface = gr.Interface(
-    fn=main,
+gr.Interface(
+    fn=gradio_interface,
     inputs=[
-        gr.Slider(50, 500, value=100, label="Data Points (N)"),
-        gr.Slider(0.01, 1.0, value=0.05, label="Noise Variance (V)"),
-        gr.Slider(-5, 5, value=-2, step=0.1, label="X Min"),
-        gr.Slider(0, 10, value=2, step=0.1, label="X Max"),
-        gr.Slider(1, 10, value=2, label="Hidden Layers"),
-        gr.Slider(10, 200, value=100, label="Neurons per Layer"),
-        gr.Slider(0.001, 0.1, value=0.01, step=0.001, label="Learning Rate"),
-        gr.Slider(10, 1000, value=100, label="Epochs"),
-        gr.Slider(10, 1000, value=500, label="Overfit Epochs"),
-        gr.Slider(1, 128, value=32, label="Batch Size")
+        gr.Slider(1, 500, step=1, label="Anzahl der Epochen"),
+        gr.Slider(0.01, 0.1, step=0.01, label="Rauschvarianz")
     ],
-    outputs=[]
-)
-iface.launch()
+    outputs=[
+        gr.Number(label="Trainingsverlust"),
+        gr.Number(label="Testverlust"),
+        gr.Plot(label="Vorhersagenvisualisierung")
+    ],
+    live=True
+).launch()
+
 
 
 
