@@ -2,7 +2,6 @@ import gradio as gr
 import numpy as np
 import tensorflow as tf
 import plotly.graph_objs as go
-from sklearn.metrics import mean_squared_error
 
 # Funktion zur Datengenerierung
 def generate_data(N, V, X_min, X_max):
