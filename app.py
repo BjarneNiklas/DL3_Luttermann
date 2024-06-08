@@ -115,70 +115,27 @@ def gradio_ui(data_settings, model_settings):
     fig_noisy, fig_clean, figs = plot_data(x_train, y_train, y_train_noisy, x_test, y_test, y_test_noisy, [pred_clean, pred_best, pred_overfit])
 
     # Ausgabe
+    with gr.Blocks():
     with gr.Row():
         with gr.Column():
-            gr.Plot(fig_clean, show_label=False)
-            gr.Plot(fig_noisy, show_label=False)
+            data_settings = gr.Group([
+                gr.Slider(10, 1000, value=100, step=10, label="Anzahl Datenpunkte (N)"),
+                gr.Slider(-5, 5, value=-2, label="x_min"),
+                gr.Slider(-5, 5, value=2, label="x_max"),
+                gr.Slider(0, 1, value=0.05, step=0.01, label="Rauschen-Varianz (V)")
+            ])
+            data_settings.label = "Data Settings"
         with gr.Column():
-            gr.Plot(figs[0], show_label=False)
-            gr.Markdown(f"Trainings-Loss (MSE): {train_loss_clean:.4f}, Test-Loss (MSE): {test_loss_clean:.4f}")
-            gr.Plot(figs[1], show_label=False)
-            gr.Markdown(f"Trainings-Loss (MSE): {train_loss_best:.4f}, Test-Loss (MSE): {test_loss_best:.4f}")
-            gr.Plot(figs[2], show_label=False)
-            gr.Markdown(f"Trainings-Loss (MSE): {train_loss_overfit:.4f}, Test-Loss (MSE): {test_loss_overfit:.4f}")
+            model_settings = gr.Group([
+                gr.Slider(10, 200, value=100, step=10, label="Anzahl versteckter Neuronen"),
+                gr.Slider(10, 1000, value=100, step=10, label="Epochen (unverrauscht)"),
+                gr.Slider(10, 1000, value=200, step=10, label="Epochen (Best-Fit)"),
+                gr.Slider(10, 1000, value=500, step=10, label="Epochen (Overfit)")
+            ])
+            model_settings.label = "Model Training Settings"
 
-    # Dokumentation
-    doc = gr.Markdown("""
-    ## Dokumentation
-
-    In dieser Lösung wurde eine Feed-Forward Neural Network (FFNN) Architektur mit zwei versteckten Schichten (Hidden Layers) und jeweils 100 Neuronen pro Schicht implementiert. Die Aktivierungsfunktion in den versteckten Schichten ist die ReLU-Funktion, während im Ausgabeschicht (Output Layer) eine lineare Aktivierungsfunktion verwendet wird.
-
-    Das Modell wurde mit dem Adam-Optimierer und einer Lernrate von 0.01 trainiert. Als Verlustfunktion (Loss) wurde der Mean Squared Error (MSE) verwendet.
-
-    Zunächst wurden Trainingsdaten und Testdaten aus der angegebenen Funktion `y(x) = 0.5*(x+0.8)*(x+1.8)*(x-0.2)*(x-0.3)*(x-1.9)+1` im Bereich `x ∈ [-2, 2]` generiert. Dabei wurden 100 Datenpunkte erzeugt und gleichmäßig in Trainings- und Testdaten aufgeteilt. Anschließend wurde zu den Ausgabewerten (`y`-Werten) normalverteiltes Rauschen mit einer Varianz von 0.05 hinzugefügt, um eine realistische Situation zu simulieren.
-
-    Es wurden drei Modelle trainiert:
-    1. Ein Modell auf den unverrauschten Daten (als Referenz)
-    2. Ein Modell auf den verrauschten Daten mit einer geeigneten Epochenanzahl für gute Generalisierung (Best-Fit)
-    3. Ein Modell auf den verrauschten Daten mit einer sehr hohen Epochenanzahl, um Overfitting zu demonstrieren
-
-    Die Ergebnisse wurden in einem Gradio-Interface visualisiert, das die Datensätze, Modellvorhersagen und Verluste (Trainings- und Test-Loss) in Plotly-Diagrammen darstellt.
-
-    ## Diskussion
-
-    Wie erwartet, zeigt das Modell, das auf den unverrauschten Daten trainiert wurde, nahezu identische Verluste auf den Trainings- und Testdaten. Dies liegt daran, dass in diesem Fall keine Verrauschung vorliegt und das Modell die Funktion perfekt lernen kann.
-
-    Das Best-Fit-Modell, das auf den verrauschten Daten trainiert wurde, weist einen etwas höheren Verlust auf den Testdaten im Vergleich zu den Trainingsdaten auf. Dies ist ein Anzeichen dafür, dass das Modell in der Lage ist, die zugrunde liegende Funktion trotz des Rauschens zu approximieren, ohne zu overfitting.
-
-    Im Gegensatz dazu zeigt das Overfit-Modell, das mit einer sehr hohen Epochenanzahl trainiert wurde, einen deutlich geringeren Verlust auf den Trainingsdaten im Vergleich zu den Testdaten. Dies ist ein klares Anzeichen für Overfitting, da das Modell die Trainingsdaten nahezu perfekt gelernt hat, aber nicht in der Lage ist, auf neue, ungesehene Daten (Testdaten) zu generalisieren.
-
-    Insgesamt demonstriert diese Lösung den Einfluss von Rauschen und Overfitting auf das Lernverhalten eines Feed-Forward Neural Networks und unterstreicht die Bedeutung einer sorgfältigen Modellwahl und Hyperparameter-Optimierung für eine gute Generalisierungsleistung.
-    """)
-
-    return doc
-
-# Erstelle das Gradio-Interface
-data_settings = gr.Group(
-    [
-        gr.Slider(10, 1000, value=100, step=10, label="Anzahl Datenpunkte (N)"),
-        gr.Slider(-5, 5, value=-2, label="x_min"),
-        gr.Slider(-5, 5, value=2, label="x_max"),
-        gr.Slider(0, 1, value=0.05, step=0.01, label="Rauschen-Varianz (V)")
-    ],
-    label="Data Settings"
-)
-
-model_settings = gr.Group(
-    [
-        gr.Slider(10, 200, value=100, step=10, label="Anzahl versteckter Neuronen"),
-        gr.Slider(10, 1000, value=100, step=10, label="Epochen (unverrauscht)"),
-        gr.Slider(10, 1000, value=200, step=10, label="Epochen (Best-Fit)"),
-        gr.Slider(10, 1000, value=500, step=10, label="Epochen (Overfit)")
-    ],
-    label="Model Training Settings"
-)
-
-gr.Interface(gradio_ui, inputs=[data_settings, model_settings], outputs="markdown", layout="horizontal", title="Regression mit Feed-Forward Neural Network").launch()
+    output = gr.Markdown()
+    gr.Interface(gradio_ui, inputs=[data_settings, model_settings], outputs=output, layout="horizontal", title="Regression mit Feed-Forward Neural Network").launch()
 
 
 """import numpy as np
