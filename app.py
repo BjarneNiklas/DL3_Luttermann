@@ -1,4 +1,4 @@
-import numpy as np
+""" import numpy as np
 import tensorflow as tf
 import plotly.graph_objects as go
 import plotly.subplots as sp
@@ -144,9 +144,112 @@ interface = gr.Interface(
     title="Regression mit FFNN und TensorFlow.js"
 )
 
-interface.launch()
+interface.launch()"""
 
 
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.callbacks import EarlyStopping  # Import EarlyStopping
+
+import plotly.graph_objects as go
+import plotly.subplots as sp
+import gradio as gr
+
+
+def generate_data(N=100, x_min=-2, x_max=2):
+    """Generates random data points based on a polynomial function.
+
+    Args:
+        N (int, optional): Number of data points. Defaults to 100.
+        x_min (float, optional): Minimum value for the x-axis. Defaults to -2.
+        x_max (float, optional): Maximum value for the x-axis. Defaults to 2.
+
+    Returns:
+        tuple: A tuple containing the x and y data points.
+    """
+
+    x = np.random.uniform(x_min, x_max, N)
+    y = 0.5 * (x + 0.8) * (x + 1.8) * (x - 0.2) * (x - 0.3) * (x - 1.9) + 1
+    return x, y
+
+
+def add_noise(y, variance=0.05):
+    """Adds Gaussian noise to the data.
+
+    Args:
+        y (np.ndarray): The data to add noise to.
+        variance (float, optional): The variance of the noise. Defaults to 0.05.
+
+    Returns:
+        np.ndarray: The data with noise added.
+    """
+
+    noise = np.random.normal(0, np.sqrt(variance), y.shape)
+    return y + noise
+
+
+def prepare_data(N, variance, x_min, x_max):
+    """Generates training and testing data with and without noise.
+
+    Args:
+        N (int): Number of data points.
+        variance (float): Noise variance.
+        x_min (float): Minimum value for the x-axis.
+        x_max (float): Maximum value for the x-axis.
+
+    Returns:
+        tuple: A tuple containing the training and testing data (x, y with and without noise).
+    """
+
+    x, y = generate_data(N, x_min, x_max)
+    x_train, x_test = x[: N // 2], x[N // 2 :]
+    y_train, y_test = y[: N // 2], y[N // 2 :]
+
+    y_train_noisy = add_noise(y_train, variance)
+    y_test_noisy = add_noise(y_test, variance)
+
+    return (
+        x_train,
+        y_train,
+        x_test,
+        y_test,
+        y_train_noisy,
+        y_test_noisy,
+    )
+
+
+def create_model(layers, neurons, learning_rate):
+    """Defines a feed-forward neural network (FFNN) model.
+
+    Args:
+        layers (int): Number of hidden layers.
+        neurons (int): Number of neurons per hidden layer.
+        learning_rate (float): Learning rate for the optimizer.
+
+    Returns:
+        tf.keras.Sequential: The compiled FFNN model.
+    """
+
+    model = tf.keras.Sequential()
+    for _ in range(layers):
+        model.add(tf.keras.layers.Dense(neurons, activation="relu"))
+    model.add(tf.keras.layers.Dense(1, activation="linear"))
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate), loss="mse"
+    )
+    return model
+
+
+def train_models(x_train, y_train, y_train_noisy, epochs, epochs_overfit, neurons, layers, learning_rate, batch_size):
+    """Trains three models: one without noise, one with noise for best fit, and one with noise for overfitting.
+
+    Args:
+        x_train (np.ndarray): Training data (x-axis).
+        y_train (np.ndarray): Training data (y-axis, no noise).
+        y_train_noisy (np.ndarray): Training data (y-axis, with noise).
+        epochs (int): Number of epochs for training.
+        epochs_overfit (int): Number of epochs for overfitting the noisy model.
+        neurons (int): Number of neurons per hidden layer.
 
 
 
