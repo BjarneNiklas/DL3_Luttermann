@@ -115,9 +115,9 @@ def interactive_plot(N, variance, x_min, x_max, layers, neurons, learning_rate, 
         x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy = prepare_data(N, variance, x_min, x_max)
         model_unverrauscht, model_best_fit, model_over_fit = train_models(x_train, y_train, y_train_noisy, epochs, epochs_overfit, neurons, layers, learning_rate, batch_size)
         fig = plot_results(x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy, model_unverrauscht, model_best_fit, model_over_fit)
-        return fig
+        return gr.Plot(fig)
     except Exception as e:
-        return f"Ein Fehler ist aufgetreten: {str(e)}"
+        return gr.Error(f"Ein Fehler ist aufgetreten: {str(e)}")
 
 # Gradio Interface Konfiguration
 data_inputs = [
@@ -136,11 +136,12 @@ model_inputs = [
     gr.Slider(1, 32, step=1, value=16, label="Batch-Größe")
 ]
 
-interface = gr.Interface(interactive_plot, data_inputs + model_inputs, gr.Plot(),
+interface = gr.Interface(interactive_plot, data_inputs + model_inputs, "plot",
                          title="Regression mit Feed-Forward Neural Network",
                          description="Passen Sie die Parameter an und klicken Sie auf 'Submit', um die Visualisierung zu generieren.")
 
 interface.launch()
+
 
 
 
