@@ -86,20 +86,21 @@ def train_and_visualize(data_points, noise_variance, hidden_layers, neurons_per_
 iface = gr.Interface(
     fn=train_and_visualize,
     inputs=[
-        gr.inputs.Slider(50, 500, step=10, default=100, label='Data Points (N)'),
-        gr.inputs.Slider(0.01, 0.2, step=0.01, default=0.05, label='Noise Variance (V)'),
-        gr.inputs.Slider(1, 5, step=1, default=2, label='Hidden Layers'),
-        gr.inputs.Slider(10, 200, step=10, default=100, label='Neurons per Layer'),
-        gr.inputs.Number(default=0.01, label='Learning Rate'),
-        gr.inputs.Slider(10, 1000, step=10, default=100, label='Epochs'),
-        gr.inputs.Slider(16, 128, step=16, default=32, label='Batch Size')
+        gr.components.Slider(50, 500, step=10, value=100, label='Data Points (N)'),
+        gr.components.Slider(0.01, 0.2, step=0.01, value=0.05, label='Noise Variance (V)'),
+        gr.components.Slider(1, 5, step=1, value=2, label='Hidden Layers'),
+        gr.components.Slider(10, 200, step=10, value=100, label='Neurons per Layer'),
+        gr.components.Number(value=0.01, label='Learning Rate'),
+        gr.components.Slider(10, 1000, step=10, value=100, label='Epochs'),
+        gr.components.Slider(16, 128, step=16, value=32, label='Batch Size')
     ],
-    outputs=gr.outputs.Plot(label='Model Predictions'),
+    outputs=gr.components.Plot(label='Model Predictions'),
     title='FFNN Regression with TensorFlow',
     description='An interactive tool for training and visualizing Feed-Forward Neural Networks for regression tasks.'
 )
 
 iface.launch()
+
 
 
 
