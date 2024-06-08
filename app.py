@@ -51,13 +51,7 @@ def plot_predictions(x_train, y_train, y_pred_train, x_test, y_test, y_pred_test
     return fig_train, fig_test
 
 # Gradio Interface
-def visualize(data_settings, model_settings):
-    N = int(data_settings['N'])
-    noise_var = data_settings['noise_var']
-    
-    epochs_best_fit = int(model_settings['epochs_best_fit'])
-    epochs_overfit = int(model_settings['epochs_overfit'])
-
+def visualize(N, noise_var, epochs_best_fit, epochs_overfit):
     x, y, y_noisy = generate_data(N, noise_var)
     train_indices = np.random.choice(np.arange(N), size=N//2, replace=False)
     test_indices = np.setdiff1d(np.arange(N), train_indices)
@@ -114,17 +108,6 @@ def visualize(data_settings, model_settings):
 
     return fig_data_unnoisy, fig_data_noisy, fig_train_unnoisy, fig_test_unnoisy, fig_train_best_fit, fig_test_best_fit, fig_train_overfit, fig_test_overfit
 
-# Gradio Interface definieren
-data_settings = {
-    "N": gr.Slider(minimum=50, maximum=500, step=50, value=100, label="Anzahl der Datenpunkte"),
-    "noise_var": gr.Slider(minimum=0, maximum=0.1, step=0.01, value=0.05, label="Varianz des Rauschens")
-}
-
-model_settings = {
-    "epochs_best_fit": gr.Slider(minimum=50, maximum=500, step=50, value=200, label="Epochen für Best-Fit Modell"),
-    "epochs_overfit": gr.Slider(minimum=50, maximum=500, step=50, value=500, label="Epochen für Overfit Modell")
-}
-
 # Diskussion und Dokumentation
 discussion = """
 # Diskussion und Dokumentation
@@ -144,7 +127,12 @@ Durch die Analyse der verschiedenen Modelle konnten wir die Auswirkungen von Ove
 # Gradio Interface erstellen
 interface = gr.Interface(
     fn=visualize,
-    inputs=[data_settings, model_settings],
+    inputs=[
+        gr.Slider(minimum=50, maximum=500, step=50, value=100, label="Anzahl der Datenpunkte"),
+        gr.Slider(minimum=0, maximum=0.1, step=0.01, value=0.05, label="Varianz des Rauschens"),
+        gr.Slider(minimum=50, maximum=500, step=50, value=200, label="Epochen für Best-Fit Modell"),
+        gr.Slider(minimum=50, maximum=500, step=50, value=500, label="Epochen für Overfit Modell")
+    ],
     outputs=[
         gr.Plot(label="Daten ohne Rauschen"),
         gr.Plot(label="Daten mit Rauschen"),
