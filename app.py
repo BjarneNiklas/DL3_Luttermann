@@ -127,9 +127,7 @@ interface = gr.Interface(
     fn=interactive_plot, 
     inputs=data_inputs + model_inputs, 
     outputs=gr.Plot(),
-    layout="two-col",
-    title="Regression mit FFNN und TensorFlow.js",
-    theme="dark"
+    title="Regression mit FFNN und TensorFlow.js"
 )
 
 interface.launch()
