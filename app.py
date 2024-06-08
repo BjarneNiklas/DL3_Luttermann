@@ -264,7 +264,7 @@ Wir sollten ein Feed-Forward Neural Network (FFNN) zur Regression einer unbekann
 ## Fazit
 Durch die Analyse der verschiedenen Modelle konnten wir die Auswirkungen von Overfitting und die Bedeutung der richtigen Anzahl von Trainingsepochen demonstrieren. Die Verwendung von Gradio und Plotly ermöglichte eine interaktive und anschauliche Darstellung der Ergebnisse.
 """
-
+"""
 # Gradio Interface erstellen
 interface = gr.Interface(
     fn=visualize,
@@ -496,4 +496,5 @@ def interactive_plot():
 
 interface = gr.Interface(fn=interactive_plot, inputs=[], outputs=gr.Plot())
 
-interface.launch()"""
+interface.launch()
+"""
