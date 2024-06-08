@@ -74,16 +74,16 @@ def main(N, V, X_min, X_max, hidden_layers, neurons_per_layer, learning_rate, ep
 interface = gr.Interface(
     fn=main,
     inputs=[
-        gr.Slider(50, 500, default=100, label="Data Points (N)"),
-        gr.Slider(0.01, 1.0, default=0.05, label="Noise Variance (V)"),
-        gr.Slider(-5, 0, default=-2, step=0.1, label="X Min"),
-        gr.Slider(0, 5, default=2, step=0.1, label="X Max"),
-        gr.Slider(1, 10, default=2, label="Hidden Layers"),
-        gr.Slider(10, 200, default=100, label="Neurons per Layer"),
-        gr.Slider(0.001, 0.1, default=0.01, step=0.001, label="Learning Rate"),
-        gr.Slider(10, 1000, default=100, label="Epochs"),
-        gr.Slider(10, 1000, default=500, label="Overfit Epochs"),
-        gr.Slider(1, 128, default=32, label="Batch Size")
+        gr.Slider(50, 500, value=100, label="Data Points (N)"),
+        gr.Slider(0.01, 1.0, value=0.05, label="Noise Variance (V)"),
+        gr.Slider(-5, 0, value=-2, step=0.1, label="X Min"),
+        gr.Slider(0, 5, value=2, step=0.1, label="X Max"),
+        gr.Slider(1, 10, value=2, label="Hidden Layers"),
+        gr.Slider(10, 200, value=100, label="Neurons per Layer"),
+        gr.Slider(0.001, 0.1, value=0.01, step=0.001, label="Learning Rate"),
+        gr.Slider(10, 1000, value=100, label="Epochs"),
+        gr.Slider(10, 1000, value=500, label="Overfit Epochs"),
+        gr.Slider(1, 128, value=32, label="Batch Size")
     ],
     outputs=[
         gr.outputs.Plot(label="Best Fit - Noiseless Data"),
