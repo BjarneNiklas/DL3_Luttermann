@@ -78,18 +78,24 @@ def plot_data_and_predictions(x_train, y_train, y_train_noisy, x_test, y_test, y
     # Row 2: Predictions of Model Trained on No Noise Data
     fig.add_trace(go.Scatter(x=x_train, y=y_pred_no_noise_train.flatten(), mode='lines', name='Model Prediction'), row=2, col=1)
     fig.add_trace(go.Scatter(x=x_test, y=y_pred_no_noise_test.flatten(), mode='lines', name='Model Prediction'), row=2, col=2)
+    fig.add_trace(go.Scatter(x=x_vals, y=model_no_noise.predict(x_vals).flatten(), mode='lines', name='Ground Truth'), row=2, col=1)
+    fig.add_trace(go.Scatter(x=x_vals, y=model_no_noise.predict(x_vals).flatten(), mode='lines', name='Ground Truth'), row=2, col=2)
     fig.update_layout(title=f"Train Loss: {mse_no_noise_train:.4f}, Test Loss: {mse_no_noise_test:.4f}", row=2, col=1)
     fig.update_layout(title=f"Train Loss: {mse_no_noise_train:.4f}, Test Loss: {mse_no_noise_test:.4f}", row=2, col=2)
     
     # Row 3: Predictions of Best Fit Model
     fig.add_trace(go.Scatter(x=x_train, y=y_pred_best_train.flatten(), mode='lines', name='Model Prediction'), row=3, col=1)
     fig.add_trace(go.Scatter(x=x_test, y=y_pred_best_test.flatten(), mode='lines', name='Model Prediction'), row=3, col=2)
+    fig.add_trace(go.Scatter(x=x_vals, y=model_best.predict(x_vals).flatten(), mode='lines', name='Ground Truth'), row=3, col=1)
+    fig.add_trace(go.Scatter(x=x_vals, y=model_best.predict(x_vals).flatten(), mode='lines', name='Ground Truth'), row=3, col=2)
     fig.update_layout(title=f"Train Loss: {mse_best_train:.4f}, Test Loss: {mse_best_test:.4f}", row=3, col=1)
     fig.update_layout(title=f"Train Loss: {mse_best_train:.4f}, Test Loss: {mse_best_test:.4f}", row=3, col=2)
     
     # Row 4: Predictions of Overfit Model
     fig.add_trace(go.Scatter(x=x_train, y=y_pred_overfit_train.flatten(), mode='lines', name='Model Prediction'), row=4, col=1)
     fig.add_trace(go.Scatter(x=x_test, y=y_pred_overfit_test.flatten(), mode='lines', name='Model Prediction'), row=4, col=2)
+    fig.add_trace(go.Scatter(x=x_vals, y=model_overfit.predict(x_vals).flatten(), mode='lines', name='Ground Truth'), row=4, col=1)
+    fig.add_trace(go.Scatter(x=x_vals, y=model_overfit.predict(x_vals).flatten(), mode='lines', name='Ground Truth'), row=4, col=2)
     fig.update_layout(title=f"Train Loss: {mse_overfit_train:.4f}, Test Loss: {mse_overfit_test:.4f}", row=4, col=1)
     fig.update_layout(title=f"Train Loss: {mse_overfit_train:.4f}, Test Loss: {mse_overfit_test:.4f}", row=4, col=2)
     
@@ -119,7 +125,6 @@ gr.Interface(
     outputs=gr.Plot(),
     title="FFNN Regression with Noisy Data"
 ).launch()
-
 
 
 
