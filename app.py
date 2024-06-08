@@ -59,27 +59,27 @@ def train_and_visualize(data_points, noise_variance, hidden_layers, neurons_per_
 
     # Create subplots
     fig = make_subplots(rows=3, cols=2, subplot_titles=(
-        'Noiseless Train', 'Noiseless Test', 'Best-Fit Train', 'Best-Fit Test', 'Overfit Train', 'Overfit Test'))
+        'Noiseless Model', 'Best-Fit Model', 'Overfit Model'))
 
     # Plot results for noiseless model
     fig.add_trace(go.Scatter(x=X_train, y=Y_train, mode='markers', name='Train Data', marker=dict(color='blue')), row=1, col=1)
-    fig.add_trace(go.Scatter(x=X_train, y=Y_pred_noiseless_train, mode='lines', name='Model Prediction', line=dict(color='red')), row=1, col=1)
-    fig.add_trace(go.Scatter(x=X_test, y=Y_test, mode='markers', name='Test Data', marker=dict(color='blue')), row=1, col=2)
-    fig.add_trace(go.Scatter(x=X_test, y=Y_pred_noiseless_test, mode='lines', name='Model Prediction', line=dict(color='red')), row=1, col=2)
+    fig.add_trace(go.Scatter(x=X_test, y=Y_test, mode='markers', name='Test Data', marker=dict(color='blue')), row=1, col=1)
+    fig.add_trace(go.Scatter(x=X_train, y=Y_pred_noiseless_train, mode='lines', name='Train Prediction', line=dict(color='red')), row=1, col=1)
+    fig.add_trace(go.Scatter(x=X_test, y=Y_pred_noiseless_test, mode='lines', name='Test Prediction', line=dict(color='red')), row=1, col=1)
 
     # Plot results for best-fit model
     fig.add_trace(go.Scatter(x=X_train, y=Y_train_noisy, mode='markers', name='Train Data', marker=dict(color='blue')), row=2, col=1)
-    fig.add_trace(go.Scatter(x=X_train, y=Y_pred_best_fit_train, mode='lines', name='Model Prediction', line=dict(color='red')), row=2, col=1)
-    fig.add_trace(go.Scatter(x=X_test, y=Y_test_noisy, mode='markers', name='Test Data', marker=dict(color='blue')), row=2, col=2)
-    fig.add_trace(go.Scatter(x=X_test, y=Y_pred_best_fit_test, mode='lines', name='Model Prediction', line=dict(color='red')), row=2, col=2)
+    fig.add_trace(go.Scatter(x=X_test, y=Y_test_noisy, mode='markers', name='Test Data', marker=dict(color='blue')), row=2, col=1)
+    fig.add_trace(go.Scatter(x=X_train, y=Y_pred_best_fit_train, mode='lines', name='Train Prediction', line=dict(color='red')), row=2, col=1)
+    fig.add_trace(go.Scatter(x=X_test, y=Y_pred_best_fit_test, mode='lines', name='Test Prediction', line=dict(color='red')), row=2, col=1)
 
     # Plot results for overfit model
     fig.add_trace(go.Scatter(x=X_train, y=Y_train_noisy, mode='markers', name='Train Data', marker=dict(color='blue')), row=3, col=1)
-    fig.add_trace(go.Scatter(x=X_train, y=Y_pred_overfit_train, mode='lines', name='Model Prediction', line=dict(color='red')), row=3, col=1)
-    fig.add_trace(go.Scatter(x=X_test, y=Y_test_noisy, mode='markers', name='Test Data', marker=dict(color='blue')), row=3, col=2)
-    fig.add_trace(go.Scatter(x=X_test, y=Y_pred_overfit_test, mode='lines', name='Model Prediction', line=dict(color='red')), row=3, col=2)
+    fig.add_trace(go.Scatter(x=X_test, y=Y_test_noisy, mode='markers', name='Test Data', marker=dict(color='blue')), row=3, col=1)
+    fig.add_trace(go.Scatter(x=X_train, y=Y_pred_overfit_train, mode='lines', name='Train Prediction', line=dict(color='red')), row=3, col=1)
+    fig.add_trace(go.Scatter(x=X_test, y=Y_pred_overfit_test, mode='lines', name='Test Prediction', line=dict(color='red')), row=3, col=1)
 
-    fig.update_layout(title='Model Predictions', showlegend=False, height=900)
+    fig.update_layout(title='Model Predictions', showlegend=True, height=900)
 
     return fig
 
@@ -100,6 +100,7 @@ iface = gr.Interface(
 )
 
 iface.launch()
+
 
 
 
