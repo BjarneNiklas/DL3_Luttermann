@@ -1,130 +1,106 @@
 import numpy as np
 
-# Funktion zur Erzeugung der Daten
-def generate_data(N=100, noise_variance=0.05):
-    np.random.seed(42)  # Für Reproduzierbarkeit
-    x = np.random.uniform(-2, 2, N)
-    y = 0.5 * (x + 0.8) * (x + 1.8) * (x - 0.2) * (x - 0.3) * (x - 1.9) + 1
-    
-    # Aufteilen in Trainings- und Testdaten
-    indices = np.random.permutation(N)
-    train_idx, test_idx = indices[:N//2], indices[N//2:]
-    x_train, y_train = x[train_idx], y[train_idx]
-    x_test, y_test = x[test_idx], y[test_idx]
-    
-    # Hinzufügen von Rauschen
-    y_train_noisy = y_train + np.random.normal(0, np.sqrt(noise_variance), N//2)
-    y_test_noisy = y_test + np.random.normal(0, np.sqrt(noise_variance), N//2)
-    
-    return (x_train, y_train, y_train_noisy), (x_test, y_test, y_test_noisy)
+# Parameter
+N = 100
+x_min, x_max = -2, 2
+noise_variance = 0.05
 
-# Daten erzeugen
-train_data, test_data = generate_data()
+# Generierung der Daten
+x = np.random.uniform(x_min, x_max, N)
+y = 0.5 * (x+0.8) * (x+1.8) * (x-0.2) * (x-0.3) * (x-1.9) + 1
 
+# Aufteilen der Daten in Trainings- und Testdatensätze
+train_size = N // 2
+indices = np.random.permutation(N)
+train_indices, test_indices = indices[:train_size], indices[train_size:]
+x_train, y_train = x[train_indices], y[train_indices]
+x_test, y_test = x[test_indices], y[test_indices]
+
+# Hinzufügen von Rauschen
+noise = np.random.normal(0, noise_variance**0.5, size=y_train.shape)
+y_train_noisy = y_train + noise
+noise = np.random.normal(0, noise_variance**0.5, size=y_test.shape)
+y_test_noisy = y_test + noise
 
 import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.optimizers import Adam
 
-# Modellarchitektur definieren
-def create_model():
-    model = Sequential([
-        Dense(100, activation='relu', input_shape=(1,)),
-        Dense(100, activation='relu'),
-        Dense(1, activation='linear')
+def build_model():
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(100, activation='relu', input_shape=(1,)),
+        tf.keras.layers.Dense(100, activation='relu'),
+        tf.keras.layers.Dense(1, activation='linear')
     ])
-    model.compile(optimizer=Adam(learning_rate=0.01), loss='mse')
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), loss='mean_squared_error')
     return model
+    
+model = build_model()
+history = model.fit(x_train, y_train, epochs=200, batch_size=32, validation_data=(x_test, y_test), verbose=0)
+train_loss = history.history['loss']
+test_loss = history.history['val_loss']
 
-# Modelle erstellen
-model_unverrauscht = create_model()
-model_best_fit = create_model()
-model_overfit = create_model()
 
-# Modelle trainieren
-x_train, y_train, y_train_noisy = train_data
-x_test, y_test, y_test_noisy = test_data
+best_fit_model = build_model()
+best_fit_history = best_fit_model.fit(x_train, y_train_noisy, epochs=200, batch_size=32, validation_data=(x_test, y_test_noisy), verbose=0)
+best_fit_train_loss = best_fit_history.history['loss']
+best_fit_test_loss = best_fit_history.history['val_loss']
 
-# Modell ohne Rauschen trainieren
-history_unverrauscht = model_unverrauscht.fit(x_train, y_train, epochs=200, batch_size=32, validation_data=(x_test, y_test), verbose=0)
-
-# Modell mit Rauschen (Best-Fit) trainieren
-history_best_fit = model_best_fit.fit(x_train, y_train_noisy, epochs=200, batch_size=32, validation_data=(x_test, y_test_noisy), verbose=0)
-
-# Modell mit Rauschen (Over-Fit) trainieren
-history_overfit = model_overfit.fit(x_train, y_train_noisy, epochs=500, batch_size=32, validation_data=(x_test, y_test_noisy), verbose=0)
-
+overfit_model = build_model()
+overfit_history = overfit_model.fit(x_train, y_train_noisy, epochs=500, batch_size=32, validation_data=(x_test, y_test_noisy), verbose=0)
+overfit_train_loss = overfit_history.history['loss']
+overfit_test_loss = overfit_history.history['val_loss']
 
 import plotly.graph_objs as go
 import gradio as gr
 
-# Visualisierungsfunktion erstellen
-def plot_results():
-    # Datenplot
-    fig_data = go.Figure()
-    fig_data.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train (unverrauscht)', marker=dict(color='blue')))
-    fig_data.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test (unverrauscht)', marker=dict(color='red')))
-    fig_data.add_trace(go.Scatter(x=x_train, y=y_train_noisy, mode='markers', name='Train (verrauscht)', marker=dict(color='green')))
-    fig_data.add_trace(go.Scatter(x=x_test, y=y_test_noisy, mode='markers', name='Test (verrauscht)', marker=dict(color='orange')))
-    fig_data.update_layout(title='Daten', xaxis_title='x', yaxis_title='y', height=400)
+def plot_data(x_train, y_train, x_test, y_test, x_train_noisy, y_train_noisy, x_test_noisy, y_test_noisy):
+    fig = make_subplots(rows=4, cols=2, subplot_titles=[
+        "Original Data (Train)", "Original Data (Test)", 
+        "Noisy Data (Train)", "Noisy Data (Test)",
+        "Model Prediction (Train)", "Model Prediction (Test)",
+        "Best-Fit Model (Train)", "Best-Fit Model (Test)",
+        "Overfit Model (Train)", "Overfit Model (Test)"
+    ])
 
-    # Vorhersagenplot unverrauscht
-    fig_pred_unverrauscht_train = go.Figure()
-    fig_pred_unverrauscht_train.add_trace(go.Scatter(x=x_train, y=model_unverrauscht.predict(x_train), mode='markers', name='Train Predictions', marker=dict(color='blue')))
-    fig_pred_unverrauscht_train.update_layout(title='Vorhersagen (Unverrauscht) - Training', xaxis_title='x', yaxis_title='y', height=400)
+    # Plot original data
+    fig.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data'), row=1, col=1)
+    fig.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data'), row=1, col=2)
     
-    fig_pred_unverrauscht_test = go.Figure()
-    fig_pred_unverrauscht_test.add_trace(go.Scatter(x=x_test, y=model_unverrauscht.predict(x_test), mode='markers', name='Test Predictions', marker=dict(color='red')))
-    fig_pred_unverrauscht_test.update_layout(title='Vorhersagen (Unverrauscht) - Test', xaxis_title='x', yaxis_title='y', height=400)
+    # Plot noisy data
+    fig.add_trace(go.Scatter(x=x_train_noisy, y=y_train_noisy, mode='markers', name='Noisy Train Data'), row=2, col=1)
+    fig.add_trace(go.Scatter(x=x_test_noisy, y=y_test_noisy, mode='markers', name='Noisy Test Data'), row=2, col=2)
     
-    # Vorhersagenplot Best-Fit
-    fig_pred_best_fit_train = go.Figure()
-    fig_pred_best_fit_train.add_trace(go.Scatter(x=x_train, y=model_best_fit.predict(x_train), mode='markers', name='Train Predictions', marker=dict(color='blue')))
-    fig_pred_best_fit_train.update_layout(title='Vorhersagen (Best-Fit) - Training', xaxis_title='x', yaxis_title='y', height=400)
-    
-    fig_pred_best_fit_test = go.Figure()
-    fig_pred_best_fit_test.add_trace(go.Scatter(x=x_test, y=model_best_fit.predict(x_test), mode='markers', name='Test Predictions', marker=dict(color='red')))
-    fig_pred_best_fit_test.update_layout(title='Vorhersagen (Best-Fit) - Test', xaxis_title='x', yaxis_title='y', height=400)
-    
-    # Vorhersagenplot Over-Fit
-    fig_pred_overfit_train = go.Figure()
-    fig_pred_overfit_train.add_trace(go.Scatter(x=x_train, y=model_overfit.predict(x_train), mode='markers', name='Train Predictions', marker=dict(color='blue')))
-    fig_pred_overfit_train.update_layout(title='Vorhersagen (Over-Fit) - Training', xaxis_title='x', yaxis_title='y', height=400)
-    
-    fig_pred_overfit_test = go.Figure()
-    fig_pred_overfit_test.add_trace(go.Scatter(x=x_test, y=model_overfit.predict(x_test), mode='markers', name='Test Predictions', marker=dict(color='red')))
-    fig_pred_overfit_test.update_layout(title='Vorhersagen (Over-Fit) - Test', xaxis_title='x', yaxis_title='y', height=400)
-    
-    return [fig_data, fig_pred_unverrauscht_train, fig_pred_unverrauscht_test, fig_pred_best_fit_train, fig_pred_best_fit_test, fig_pred_overfit_train, fig_pred_overfit_test]
+    # Plot model predictions
+    x_line = np.linspace(x_min, x_max, 100)
+    y_pred_train = model.predict(x_train)
+    y_pred_test = model.predict(x_test)
+    fig.add_trace(go.Scatter(x=x_train, y=y_pred_train.flatten(), mode='lines', name='Model Prediction (Train)'), row=3, col=1)
+    fig.add_trace(go.Scatter(x=x_test, y=y_pred_test.flatten(), mode='lines', name='Model Prediction (Test)'), row=3, col=2)
 
-# Gradio Interface
-def build_interface():
-    with gr.Blocks() as demo:
-        with gr.Row():
-            gr.Markdown("## Regression mit FFNN")
-        with gr.Row():
-            with gr.Column():
-                fig_data = gr.Plot(plot_results()[0])
-                fig_pred_unverrauscht_train = gr.Plot(plot_results()[1])
-                fig_pred_best_fit_train = gr.Plot(plot_results()[3])
-                fig_pred_overfit_train = gr.Plot(plot_results()[5])
-            with gr.Column():
-                fig_pred_unverrauscht_test = gr.Plot(plot_results()[2])
-                fig_pred_best_fit_test = gr.Plot(plot_results()[4])
-                fig_pred_overfit_test = gr.Plot(plot_results()[6])
-                
-        with gr.Row():
-            gr.Markdown("## Loss (MSE)")
-            gr.Textbox(f"Loss (Unverrauscht) - Train: {history_unverrauscht.history['loss'][-1]:.4f}, Test: {history_unverrauscht.history['val_loss'][-1]:.4f}")
-            gr.Textbox(f"Loss (Best-Fit) - Train: {history_best_fit.history['loss'][-1]:.4f}, Test: {history_best_fit.history['val_loss'][-1]:.4f}")
-            gr.Textbox(f"Loss (Over-Fit) - Train: {history_overfit.history['loss'][-1]:.4f}, Test: {history_overfit.history['val_loss'][-1]:.4f}")
+    # Plot best-fit model predictions
+    y_best_pred_train = best_fit_model.predict(x_train)
+    y_best_pred_test = best_fit_model.predict(x_test)
+    fig.add_trace(go.Scatter(x=x_train, y=y_best_pred_train.flatten(), mode='lines', name='Best-Fit Model (Train)'), row=4, col=1)
+    fig.add_trace(go.Scatter(x=x_test, y=y_best_pred_test.flatten(), mode='lines', name='Best-Fit Model (Test)'), row=4, col=2)
+    
+    # Plot overfit model predictions
+    y_overfit_pred_train = overfit_model.predict(x_train)
+    y_overfit_pred_test = overfit_model.predict(x_test)
+    fig.add_trace(go.Scatter(x=x_train, y=y_overfit_pred_train.flatten(), mode='lines', name='Overfit Model (Train)'), row=4, col=1)
+    fig.add_trace(go.Scatter(x=x_test, y=y_overfit_pred_test.flatten(), mode='lines', name='Overfit Model (Test)'), row=4, col=2)
 
-    return demo
+    fig.update_layout(height=800, width=1000, title_text="Regression with FFNN", showlegend=False)
+    return fig
 
-# Interface starten
-demo = build_interface()
-demo.launch()
+def gradio_interface():
+    interface = gr.Interface(
+        fn=plot_data,
+        inputs=[],
+        outputs=gr.Plot(),
+        layout="horizontal"
+    )
+    interface.launch()
+
+gradio_interface()
 
 
 
