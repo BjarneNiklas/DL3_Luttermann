@@ -14,6 +14,19 @@ def add_noise(y, variance):
     noise = np.random.normal(0, np.sqrt(variance), y.shape)
     return y + noise
 
+# Daten generieren
+N = 100
+x, y = generate_data(N)
+x_train, x_test = np.split(x, 2)
+y_train, y_test = np.split(y, 2)
+
+# Daten verrauschen
+noise_variance = 0.05
+y_train_noisy = add_noise(y_train, noise_variance)
+y_test_noisy = add_noise(y_test, noise_variance)
+
+### 2. Modelltraining
+
 # Funktion zur Erstellung des Modells
 def create_model():
     model = tf.keras.Sequential([
@@ -28,17 +41,6 @@ def create_model():
 def train_model(model, x_train, y_train, epochs):
     history = model.fit(x_train, y_train, epochs=epochs, batch_size=32, verbose=0)
     return history.history['loss']
-
-# Daten generieren
-N = 100
-x, y = generate_data(N)
-x_train, x_test = np.split(x, 2)
-y_train, y_test = np.split(y, 2)
-
-# Daten verrauschen
-noise_variance = 0.05
-y_train_noisy = add_noise(y_train, noise_variance)
-y_test_noisy = add_noise(y_test, noise_variance)
 
 # Modelle trainieren
 model_clean = create_model()
@@ -59,6 +61,8 @@ y_pred_best_fit_test = model_best_fit.predict(x_test).flatten()
 
 y_pred_overfit_train = model_overfit.predict(x_train).flatten()
 y_pred_overfit_test = model_overfit.predict(x_test).flatten()
+
+### 3. Visualisierung und Gradio-Interface
 
 # Funktion zum Plotten der Daten
 def plot_data():
@@ -115,6 +119,7 @@ def plot_data():
 # Gradio Interface
 iface = gr.Interface(fn=plot_data, inputs=[], outputs="plot")
 iface.launch()
+
 
 
 
