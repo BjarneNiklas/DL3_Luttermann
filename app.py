@@ -52,14 +52,19 @@ def plot_data(x_train, y_train, x_test, y_test, title, show_true_function, x_min
 
 # Plot predictions
 def plot_predictions(x, y, model, title, show_true_function, x_min, x_max, data_type):
-    x_range = np.linspace(x_min, x_max, 1000)
-    y_pred = model.predict(x_range).flatten()
     y_pred_points = model.predict(x).flatten()  # Vorhersagen für die tatsächlichen Datenpunkte
+
+    if data_type == "Train":
+        x_range = np.linspace(x_min, x_max, 1000)
+        y_pred = model.predict(x_range).flatten()  # Vorhersagelinie basierend auf Trainingsdaten
+    else:
+        x_range = x  # Verwende die Testdaten für die x-Werte
+        y_pred = y_pred_points  # Verwende die Vorhersagen für die Testdaten als Vorhersagelinie
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=x, y=y, mode='markers', name=f'{data_type} Data', marker=dict(color='blue' if data_type == 'Train' else 'red')))
     fig.add_trace(go.Scatter(x=x_range, y=y_pred, mode='lines', name='Prediction Line', line=dict(color='green')))
-    fig.add_trace(go.Scatter(x=x, y=y_pred_points, mode='markers', name='Prediction Points', marker=dict(color='green')))  # Datenpunkte auf der Vorhersagelinie
+    fig.add_trace(go.Scatter(x=x, y=y_pred_points, mode='markers', name='Prediction Points', marker=dict(color='green')))
 
     if show_true_function:
         y_true = true_function(x_range)
@@ -150,19 +155,20 @@ model_settings = [
 outputs = [
     gr.Plot(label="Noiseless Datasets"),
     gr.Plot(label="Noisy Datasets"),
-    gr.Plot(label="Unnoisy Model - Train Data"),
-    gr.Textbox(label="Unnoisy Model Losses"),
-    gr.Plot(label="Unnoisy Model - Test Data"),
-    gr.Plot(label="Best-Fit Model - Train Data"),
-    gr.Textbox(label="Best-Fit Model Losses"),
-    gr.Plot(label="Best-Fit Model - Test Data"),
-    gr.Plot(label="Overfit Model - Train Data"),
-    gr.Textbox(label="Overfit Model Losses"),
-    gr.Plot(label="Overfit Model - Test Data")
+    gr.Plot(label="Unnoisy Model - Train Data", visible=False),
+    gr.Textbox(label="Unnoisy Model Losses", visible=False),
+    gr.Plot(label="Unnoisy Model - Test Data", visible=False),
+    gr.Plot(label="Best-Fit Model - Train Data", visible=False),
+    gr.Textbox(label="Best-Fit Model Losses", visible=False),
+    gr.Plot(label="Best-Fit Model - Test Data", visible=False),
+    gr.Plot(label="Overfit Model - Train Data", visible=False),
+    gr.Textbox(label="Overfit Model Losses", visible=False),
+    gr.Plot(label="Overfit Model - Test Data", visible=False)
 ]
 
 def generate_data_wrapper(*args):
-    return generate_data(*args)
+    noiseless_plot, noisy_plot = generate_data(*args)
+    return [noiseless_plot, noisy_plot] + [None] * 9  # Fülle die restlichen Ausgaben mit None
 
 def train_models_wrapper(*args):
     return main(*args)
@@ -220,7 +226,7 @@ with demo:
             gr.Markdown("### Overfit Model - Test Data")
             outputs[10].render()
 
-    generate_data_btn.click(generate_data_wrapper, inputs=data_settings, outputs=[outputs[0], outputs[1]])
+    generate_data_btn.click(generate_data_wrapper, inputs=data_settings, outputs=outputs)
     train_models_btn.click(train_models_wrapper, inputs=data_settings + model_settings, outputs=outputs)
 
 demo.launch()
