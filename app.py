@@ -39,63 +39,69 @@ def train_model(x_train, y_train, epochs, model):
     return model, history.history['loss'][-1]
 
 # Plot data
-def plot_data(x_train, y_train, x_test, y_test, title, show_true_function, x_min, x_max):
+def plot_data(x_train, y_train, x_test, y_test, title, show_true_function, show_prediction_line, x_min, x_max):
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data', marker=dict(color='blue')))
     fig.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data', marker=dict(color='red')))
-    if show_true_function:
+    if show_true_function or show_prediction_line:
         x_range = np.linspace(x_min, x_max, 1000)
+        y_true = true_function(x_range)
+        if show_true_function:
+            fig.add_trace(go.Scatter(x=x_range, y=y_true, mode='lines', name='True Function', line=dict(color='green')))
+        if show_prediction_line:
+            y_pred = model.predict(x_range).flatten()
+            fig.add_trace(go.Scatter(x=x_range, y=y_pred, mode='lines', name='Prediction Line', line=dict(color='orange')))
+    fig.update_layout(title=title)
+    return fig
+
+# Plot predictions
+def plot_predictions(x, y, model, title, show_true_function, show_prediction_line, x_min, x_max, data_type):
+    y_pred_points = model.predict(x).flatten()  # Vorhersagen für die tatsächlichen Datenpunkte
+
+    x_range = np.linspace(x_min, x_max, 1000)
+    y_pred = model.predict(x_range).flatten()  # Vorhersagelinie basierend auf Trainingsdaten
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=x, y=y, mode='markers', name=f'{data_type} Data', marker=dict(color='blue' if data_type == 'Train' else 'red')))
+    fig.add_trace(go.Scatter(x=x, y=y_pred_points, mode='markers', name='Prediction Points', marker=dict(color='green')))
+    fig.add_trace(go.Scatter(x=x_range, y=y_pred, mode='lines', name='Prediction Line', line=dict(color='orange')))
+
+    if show_true_function:
         y_true = true_function(x_range)
         fig.add_trace(go.Scatter(x=x_range, y=y_true, mode='lines', name='True Function', line=dict(color='green')))
     fig.update_layout(title=title)
     return fig
 
-# Plot predictions
-def plot_predictions(x, y, model, title, show_true_function, x_min, x_max, data_type):
-    x_range = np.linspace(x_min, x_max, 1000)
-    y_pred = model.predict(x_range).flatten()
-    y_pred_points = model.predict(x).flatten()
-
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=x, y=y, mode='markers', name=f'{data_type} Data', marker=dict(color='blue' if data_type == 'Train' else 'red')))
-    fig.add_trace(go.Scatter(x=x, y=y_pred_points, mode='markers', name='Prediction Points', marker=dict(color='green')))
-    fig.add_trace(go.Scatter(x=x_range, y=y_pred, mode='lines', name='Prediction Line', line=dict(color='green')))
-    if show_true_function:
-        y_true = true_function(x_range)
-        fig.add_trace(go.Scatter(x=x_range, y=y_true, mode='lines', name='True Function', line=dict(color='orange')))
-    fig.update_layout(title=title)
-    return fig
-
 # Main function to handle training and plotting
-def main(N, noise_variance, x_min, x_max, num_layers, neurons_per_layer, epochs_unnoisy, epochs_best_fit, epochs_overfit, show_true_function):
+def main(N, noise_variance, x_min, x_max, num_layers, neurons_per_layer, epochs_unnoisy, epochs_best_fit, epochs_overfit, show_true_function, show_prediction_line):
     # Generate data
     x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy = generate_data(N, noise_variance, x_min, x_max)
 
     # Noiseless data plot
-    noiseless_plot = plot_data(x_train, y_train, x_test, y_test, "Noiseless Datasets", show_true_function, x_min, x_max)
+    noiseless_plot = plot_data(x_train, y_train, x_test, y_test, "Noiseless Datasets", show_true_function, show_prediction_line, x_min, x_max)
 
     # Noisy data plot
-    noisy_plot = plot_data(x_train, y_train_noisy, x_test, y_test_noisy, "Noisy Datasets", show_true_function, x_min, x_max)
+    noisy_plot = plot_data(x_train, y_train_noisy, x_test, y_test_noisy, "Noisy Datasets", show_true_function, show_prediction_line, x_min, x_max)
 
     # Unnoisy model
     model_unnoisy = create_model(num_layers, neurons_per_layer)
     model_unnoisy, loss_unnoisy_train = train_model(x_train, y_train, epochs_unnoisy, model_unnoisy)
-    unnoisy_plot_train = plot_predictions(x_train, y_train, model_unnoisy, "Unnoisy Model - Train Data", show_true_function, x_min, x_max, "Train")
-    unnoisy_plot_test = plot_predictions(x_test, y_test, model_unnoisy, "Unnoisy Model - Test Data", show_true_function, x_min, x_max, "Test")
+    unnoisy_plot_train = plot_predictions(x_train, y_train, model_unnoisy, "Unnoisy Model - Train Data", show_true_function, show_prediction_line, x_min, x_max, "Train")
+    unnoisy_plot_test = plot_predictions(x_test, y_test, model_unnoisy, "Unnoisy Model - Test Data", show_true_function, show_prediction_line, x_min, x_max, "Test")
     loss_unnoisy_test = model_unnoisy.evaluate(x_test, y_test, verbose=0)
 
     # Best-fit model
     model_best_fit = create_model(num_layers, neurons_per_layer)
     model_best_fit, loss_best_fit_train = train_model(x_train, y_train_noisy, epochs_best_fit, model_best_fit)
-    best_fit_plot_train = plot_predictions(x_train, y_train_noisy, model_best_fit, "Best-Fit Model - Train Data", show_true_function, x_min, x_max, "Train")
-    best_fit_plot_test = plot_predictions(x_test, y_test_noisy, model_best_fit, "Best-Fit Model - Test Data", show_true_function, x_min, x_max, "Test")
+    best_fit_plot_train = plot_predictions(x_train, y_train_noisy, model_best_fit, "Best-Fit Model - Train Data", show_true_function, show_prediction_line, x_min, x_max, "Train")
+    best_fit_plot_test = plot_predictions(x_test, y_test_noisy, model_best_fit, "Best-Fit Model - Test Data", show_true_function, show_prediction_line, x_min, x_max, "Test")
     loss_best_fit_test = model_best_fit.evaluate(x_test, y_test_noisy, verbose=0)
 
     # Overfit model
     model_overfit = create_model(num_layers, neurons_per_layer)
     model_overfit, loss_overfit_train = train_model(x_train, y_train_noisy, epochs_overfit, model_overfit)
-    overfit_plot_train = plot_predictions(x_train, y_train_noisy, model_overfit, "Overfit Model - Train Data", show_true_function, x_min, x_max, "Train")
-    overfit_plot_test = plot_predictions(x_test, y_test_noisy, model_overfit, "Overfit Model - Test Data", show_true_function, x_min, x_max, "Test")
+    overfit_plot_train = plot_predictions(x_train, y_train_noisy, model_overfit, "Overfit Model - Train Data", show_true_function, show_prediction_line, x_min, x_max, "Train")
+    overfit_plot_test = plot_predictions(x_test, y_test_noisy, model_overfit, "Overfit Model - Test Data", show_true_function, show_prediction_line, x_min, x_max, "Test")
     loss_overfit_test = model_overfit.evaluate(x_test, y_test_noisy, verbose=0)
 
     return (noiseless_plot, noisy_plot,
@@ -140,7 +146,7 @@ inputs = [
     gr.Slider(10, 500, step=10, value=100, label="Epochs (Unnoisy Model)"),
     gr.Slider(100, 500, step=10, value=200, label="Epochs (Best-Fit Model)"),
     gr.Slider(500, 2000, step=10, value=500, label="Epochs (Overfit Model)"),
-    gr.Checkbox(value=True, label="Show True Function")
+    gr.Checkbox(value=True, label="Show True Function and Prediction Line")
 ]
 
 outputs = [
@@ -160,50 +166,42 @@ outputs = [
 def wrapper(*args):
     return main(*args)
 
-def update_true_function(show_true_function):
-    N = inputs[0].value
-    noise_variance = inputs[1].value
-    x_min = inputs[2].value
-    x_max = inputs[3].value
-    num_layers = inputs[4].value
-    neurons_per_layer = inputs[5].value
-    epochs_unnoisy = inputs[6].value
-    epochs_best_fit = inputs[7].value
-    epochs_overfit = inputs[8].value
-    return main(N, noise_variance, x_min, x_max, num_layers, neurons_per_layer, epochs_unnoisy, epochs_best_fit, epochs_overfit, show_true_function)
-
 demo = gr.Blocks()
 
 with demo:
     gr.Markdown("## Regression with Feed-Forward Neural Network")
+    gr.Markdown("### Data Generation and Model Training")
     gr.Markdown(discussion)
     with gr.Column():
         for input_widget in inputs:
             input_widget.render()
     gr.Button("Generate Data and Train Models").click(wrapper, inputs, outputs)
+    gr.Markdown("### Noiseless Datasets")
     with gr.Row():
         with gr.Column():
             outputs[0].render()
         with gr.Column():
             outputs[1].render()
+    gr.Markdown("### Unnoisy Model")
     with gr.Row():
         with gr.Column():
             outputs[2].render()
             outputs[3].render()
         with gr.Column():
             outputs[4].render()
+    gr.Markdown("### Best-Fit Model")
     with gr.Row():
         with gr.Column():
             outputs[5].render()
             outputs[6].render()
         with gr.Column():
             outputs[7].render()
+    gr.Markdown("### Overfit Model")
     with gr.Row():
         with gr.Column():
             outputs[8].render()
             outputs[9].render()
         with gr.Column():
             outputs[10].render()
-    inputs[9].change(fn=update_true_function, inputs=inputs, outputs=[outputs[0], outputs[1], outputs[2], outputs[4], outputs[5], outputs[7], outputs[8], outputs[10]])
 
 demo.launch()
