@@ -129,6 +129,16 @@ outputs = [
 def wrapper(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_overfit, show_true_function):
     return main(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_overfit, show_true_function)
 
+def update_plots(show_true_function):
+    N = inputs[0].value
+    noise_variance = inputs[1].value
+    x_min = inputs[2].value
+    x_max = inputs[3].value
+    epochs_unnoisy = inputs[4].value
+    epochs_best = inputs[5].value
+    epochs_overfit = inputs[6].value
+    return main(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_overfit, show_true_function)
+
 # Define the interface
 with gr.Blocks() as demo:
     gr.Markdown("## Regression with Feed-Forward Neural Network")
@@ -164,5 +174,7 @@ with gr.Blocks() as demo:
             outputs[9].render()
         with gr.Column():
             outputs[10].render()
+
+    inputs[7].change(fn=update_plots, inputs=inputs[7], outputs=outputs)
 
 demo.launch()
