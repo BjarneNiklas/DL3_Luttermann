@@ -54,18 +54,18 @@ def plot_data(x_train, y_train, x_test, y_test, title, show_true_function, x_min
 
 # Plot predictions
 def plot_predictions(x, y, model, title, show_true_function, x_min, x_max, data_type):
+    x_range = np.linspace(x_min, x_max, 1000)
+    y_pred = model.predict(x_range).flatten()
     y_pred_points = model.predict(x).flatten()
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=x, y=y, mode='markers', name=f'{data_type} Data', marker=dict(color='blue' if data_type == 'Train' else 'red')))
     fig.add_trace(go.Scatter(x=x, y=y_pred_points, mode='markers', name='Prediction Points', marker=dict(color='green')))
-
+    fig.add_trace(go.Scatter(x=x_range, y=y_pred, mode='lines', name='Prediction Line', line=dict(color='green')))
     if show_true_function:
-        x_range = np.linspace(x_min, x_max, 1000)
         y_true = true_function(x_range)
         fig.add_trace(go.Scatter(x=x_range, y=y_true, mode='lines', name='True Function', line=dict(color='orange')))
-
-    fig.update_layout(title_text=title)
+    fig.update_layout(title=title)
     return fig
 
 # Main function to handle training and plotting
@@ -146,24 +146,16 @@ inputs = [
 ]
 
 outputs = [
-    gr.Markdown("### Noiseless Datasets"),
     gr.Plot(label="Noiseless Datasets"),
-    gr.Markdown("### Noisy Datasets"),
     gr.Plot(label="Noisy Datasets"),
-    gr.Markdown("### Unnoisy Model - Train Data"),
     gr.Plot(label="Unnoisy Model - Train Data"),
     gr.Textbox(label="Unnoisy Model Losses"),
-    gr.Markdown("### Unnoisy Model - Test Data"),
     gr.Plot(label="Unnoisy Model - Test Data"),
-    gr.Markdown("### Best-Fit Model - Train Data"),
     gr.Plot(label="Best-Fit Model - Train Data"),
     gr.Textbox(label="Best-Fit Model Losses"),
-    gr.Markdown("### Best-Fit Model - Test Data"),
     gr.Plot(label="Best-Fit Model - Test Data"),
-    gr.Markdown("### Overfit Model - Train Data"),
     gr.Plot(label="Overfit Model - Train Data"),
     gr.Textbox(label="Overfit Model Losses"),
-    gr.Markdown("### Overfit Model - Test Data"),
     gr.Plot(label="Overfit Model - Test Data")
 ]
 
@@ -190,37 +182,30 @@ with demo:
     with gr.Column():
         for input_widget in inputs:
             input_widget.render()
-    initial_output = wrapper(*[input.value for input in inputs])
     gr.Button("Generate Data and Train Models").click(wrapper, inputs, outputs)
     with gr.Row():
         with gr.Column():
             outputs[0].render()
-            outputs[1].value = initial_output[0]
+        with gr.Column():
+            outputs[1].render()
+    with gr.Row():
         with gr.Column():
             outputs[2].render()
-            outputs[3].value = initial_output[1]
-    with gr.Row():
+            outputs[3].render()
         with gr.Column():
             outputs[4].render()
-            outputs[5].value = initial_output[2]
-            outputs[6].value = initial_output[3]
+    with gr.Row():
+        with gr.Column():
+            outputs[5].render()
+            outputs[6].render()
         with gr.Column():
             outputs[7].render()
-            outputs[8].value = initial_output[4]
     with gr.Row():
         with gr.Column():
+            outputs[8].render()
             outputs[9].render()
-            outputs[10].value = initial_output[5]
-            outputs[11].value = initial_output[6]
         with gr.Column():
-            outputs[12].value = initial_output[7]
-    with gr.Row():
-        with gr.Column():
-            outputs[13].render()
-            outputs[14].value = initial_output[8]
-            outputs[15].value = initial_output[9]
-        with gr.Column():
-            outputs[16].value = initial_output[10]
-    inputs[9].change(fn=update_true_function, inputs=inputs, outputs=[outputs[1], outputs[3], outputs[5], outputs[8], outputs[10], outputs[13], outputs[14], outputs[17]])
+            outputs[10].render()
+    inputs[9].change(fn=update_true_function, inputs=inputs, outputs=[outputs[0], outputs[1], outputs[2], outputs[4], outputs[5], outputs[7], outputs[8], outputs[10]])
 
 demo.launch()
