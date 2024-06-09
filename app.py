@@ -78,29 +78,29 @@ def main(N, noise_variance, x_min, x_max, num_layers, neurons_per_layer, epochs_
     
     # Unnoisy model
     model_unnoisy = create_model(num_layers, neurons_per_layer)
-    model_unnoisy, loss_unnoisy = train_model(x_train, y_train, epochs_unnoisy, model_unnoisy)
+    model_unnoisy, loss_unnoisy_train = train_model(x_train, y_train, epochs_unnoisy, model_unnoisy)
     unnoisy_plot_train = plot_predictions(x_train, y_train, model_unnoisy, "Unnoisy Model - Train Data", show_true_function, x_min, x_max, "Train")
     unnoisy_plot_test = plot_predictions(x_test, y_test, model_unnoisy, "Unnoisy Model - Test Data", show_true_function, x_min, x_max, "Test")
     loss_unnoisy_test = model_unnoisy.evaluate(x_test, y_test, verbose=0)
     
     # Best-fit model
     model_best_fit = create_model(num_layers, neurons_per_layer)
-    model_best_fit, loss_best_fit = train_model(x_train, y_train_noisy, epochs_best_fit, model_best_fit)
+    model_best_fit, loss_best_fit_train = train_model(x_train, y_train_noisy, epochs_best_fit, model_best_fit)
     best_fit_plot_train = plot_predictions(x_train, y_train_noisy, model_best_fit, "Best-Fit Model - Train Data", show_true_function, x_min, x_max, "Train")
     best_fit_plot_test = plot_predictions(x_test, y_test_noisy, model_best_fit, "Best-Fit Model - Test Data", show_true_function, x_min, x_max, "Test")
     loss_best_fit_test = model_best_fit.evaluate(x_test, y_test_noisy, verbose=0)
     
     # Overfit model
     model_overfit = create_model(num_layers, neurons_per_layer)
-    model_overfit, loss_overfit = train_model(x_train, y_train_noisy, epochs_overfit, model_overfit)
+    model_overfit, loss_overfit_train = train_model(x_train, y_train_noisy, epochs_overfit, model_overfit)
     overfit_plot_train = plot_predictions(x_train, y_train_noisy, model_overfit, "Overfit Model - Train Data", show_true_function, x_min, x_max, "Train")
     overfit_plot_test = plot_predictions(x_test, y_test_noisy, model_overfit, "Overfit Model - Test Data", show_true_function, x_min, x_max, "Test")
     loss_overfit_test = model_overfit.evaluate(x_test, y_test_noisy, verbose=0)
     
     return (noiseless_plot, noisy_plot, 
-            unnoisy_plot_train, f"Train Loss: {loss_unnoisy:.4f} | Test Loss: {loss_unnoisy_test:.4f}", unnoisy_plot_test, 
-            best_fit_plot_train, f"Train Loss: {loss_best_fit:.4f} | Test Loss: {loss_best_fit_test:.4f}", best_fit_plot_test, 
-            overfit_plot_train, f"Train Loss: {loss_overfit:.4f} | Test Loss: {loss_overfit_test:.4f}", overfit_plot_test)
+            unnoisy_plot_train, f"Train Loss: {loss_unnoisy_train:.4f} | Test Loss: {loss_unnoisy_test:.4f}", unnoisy_plot_test, 
+            best_fit_plot_train, f"Train Loss: {loss_best_fit_train:.4f} | Test Loss: {loss_best_fit_test:.4f}", best_fit_plot_test, 
+            overfit_plot_train, f"Train Loss: {loss_overfit_train:.4f} | Test Loss: {loss_overfit_test:.4f}", overfit_plot_test)
 
 # Discussion and Documentation
 discussion = """
