@@ -95,6 +95,7 @@ def main(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_ov
     overfit_plot_test = plot_predictions(x_test, y_test_noisy, model_overfit, "Overfit Model - Test Data", show_true_function, x_min, x_max, "Test")
     loss_overfit_test = model_overfit.evaluate(x_test, y_test_noisy, verbose=0)
     
+    # Return plots and results
     return (noiseless_plot, noisy_plot, 
             unnoisy_plot_train, f"Train Loss: {loss_unnoisy:.4f} | Test Loss: {loss_unnoisy_test:.4f}", unnoisy_plot_test, 
             best_fit_plot_train, f"Train Loss: {loss_best:.4f} | Test Loss: {loss_best_test:.4f}", best_fit_plot_test, 
@@ -104,12 +105,12 @@ def main(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_ov
 inputs = [
     gr.Slider(50, 200, step=1, value=100, label="Data Points (N)"),
     gr.Slider(0.01, 0.1, step=0.01, value=0.05, label="Noise Variance (V)"),
-    gr.Slider(-3, -1, step=0.1, value=-2.0, label="X Min"),
-    gr.Slider(1, 3, step=0.1, value=2.0, label="X Max"),
+    gr.Slider(-2, 2, step=0.1, value=-2, label="X Min"),
+    gr.Slider(-2, 2, step=0.1, value=2, label="X Max"),
     gr.Slider(50, 500, step=10, value=100, label="Epochs (Unnoisy Model)"),
     gr.Slider(50, 500, step=10, value=200, label="Epochs (Best-Fit Model)"),
     gr.Slider(50, 500, step=10, value=500, label="Epochs (Overfit Model)"),
-    gr.Checkbox(label="Show True Function", value=True)
+    gr.Checkbox(label="Show True Function", default=True)
 ]
 
 outputs = [
