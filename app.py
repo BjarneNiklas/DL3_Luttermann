@@ -37,8 +37,8 @@ def create_model():
 # Train the model
 def train_model(x_train, y_train, epochs):
     model = create_model()
-    model.fit(x_train, y_train, epochs=epochs, batch_size=32, verbose=0)
-    return model
+    history = model.fit(x_train, y_train, epochs=epochs, batch_size=32, verbose=0)
+    return model, history.history['loss'][-1]
 
 # Plot data and predictions
 def plot_data(x_train, y_train, x_test, y_test, title):
@@ -71,24 +71,27 @@ def main(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_ov
     noisy_plot = plot_data(x_train, y_train_noisy, x_test, y_test_noisy, "Noisy Datasets")
     
     # Unnoisy model
-    model_unnoisy = train_model(x_train, y_train, epochs_unnoisy)
+    model_unnoisy, loss_unnoisy = train_model(x_train, y_train, epochs_unnoisy)
     unnoisy_plot_train = plot_predictions(model_unnoisy, x_train, y_train, x_train, y_train, "Unnoisy Model - Train Data")
     unnoisy_plot_test = plot_predictions(model_unnoisy, x_train, y_train, x_test, y_test, "Unnoisy Model - Test Data")
+    loss_unnoisy_test = model_unnoisy.evaluate(x_test, y_test, verbose=0)
     
     # Best-fit model
-    model_best = train_model(x_train, y_train_noisy, epochs_best)
+    model_best, loss_best = train_model(x_train, y_train_noisy, epochs_best)
     best_fit_plot_train = plot_predictions(model_best, x_train, y_train_noisy, x_train, y_train_noisy, "Best-Fit Model - Train Data")
     best_fit_plot_test = plot_predictions(model_best, x_train, y_train_noisy, x_test, y_test_noisy, "Best-Fit Model - Test Data")
+    loss_best_test = model_best.evaluate(x_test, y_test_noisy, verbose=0)
     
     # Overfit model
-    model_overfit = train_model(x_train, y_train_noisy, epochs_overfit)
+    model_overfit, loss_overfit = train_model(x_train, y_train_noisy, epochs_overfit)
     overfit_plot_train = plot_predictions(model_overfit, x_train, y_train_noisy, x_train, y_train_noisy, "Overfit Model - Train Data")
     overfit_plot_test = plot_predictions(model_overfit, x_train, y_train_noisy, x_test, y_test_noisy, "Overfit Model - Test Data")
+    loss_overfit_test = model_overfit.evaluate(x_test, y_test_noisy, verbose=0)
     
     return (noiseless_plot, noisy_plot, 
-            unnoisy_plot_train, unnoisy_plot_test, 
-            best_fit_plot_train, best_fit_plot_test, 
-            overfit_plot_train, overfit_plot_test)
+            unnoisy_plot_train, f"Train Loss: {loss_unnoisy:.4f} | Test Loss: {loss_unnoisy_test:.4f}", unnoisy_plot_test, 
+            best_fit_plot_train, f"Train Loss: {loss_best:.4f} | Test Loss: {loss_best_test:.4f}", best_fit_plot_test, 
+            overfit_plot_train, f"Train Loss: {loss_overfit:.4f} | Test Loss: {loss_overfit_test:.4f}", overfit_plot_test)
 
 # Gradio Interface
 inputs = [
@@ -98,19 +101,26 @@ inputs = [
     gr.Slider(1, 3, step=0.1, value=2.0, label="X Max"),
     gr.Slider(50, 500, step=10, value=100, label="Epochs (Unnoisy Model)"),
     gr.Slider(50, 500, step=10, value=200, label="Epochs (Best-Fit Model)"),
-    gr.Slider(50, 500, step=10, value=500, label="Epochs (Overfit Model)")
+    gr.Slider(50, 500, step=10, value=500, label="Epochs (Overfit Model)"),
+    gr.Button("Generate Data and Train Models")
 ]
 
 outputs = [
     gr.Plot(label="Noiseless Datasets"),
     gr.Plot(label="Noisy Datasets"),
     gr.Plot(label="Unnoisy Model - Train Data"),
+    gr.Textbox(label="Unnoisy Model Losses"),
     gr.Plot(label="Unnoisy Model - Test Data"),
     gr.Plot(label="Best-Fit Model - Train Data"),
+    gr.Textbox(label="Best-Fit Model Losses"),
     gr.Plot(label="Best-Fit Model - Test Data"),
     gr.Plot(label="Overfit Model - Train Data"),
+    gr.Textbox(label="Overfit Model Losses"),
     gr.Plot(label="Overfit Model - Test Data")
 ]
+
+def wrapper(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_overfit):
+    return main(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_overfit)
 
 # Define the interface
 with gr.Blocks() as demo:
@@ -126,7 +136,8 @@ with gr.Blocks() as demo:
                 inputs[4].render()
                 inputs[5].render()
                 inputs[6].render()
-
+                inputs[7].click(wrapper, inputs[:7], outputs)
+        
         with gr.Row():
             with gr.Column():
                 outputs[0].render()
@@ -136,19 +147,22 @@ with gr.Blocks() as demo:
         with gr.Row():
             with gr.Column():
                 outputs[2].render()
-            with gr.Column():
                 outputs[3].render()
-        
-        with gr.Row():
             with gr.Column():
                 outputs[4].render()
-            with gr.Column():
-                outputs[5].render()
         
         with gr.Row():
             with gr.Column():
+                outputs[5].render()
                 outputs[6].render()
             with gr.Column():
                 outputs[7].render()
+        
+        with gr.Row():
+            with gr.Column():
+                outputs[8].render()
+                outputs[9].render()
+            with gr.Column():
+                outputs[10].render()
         
 demo.launch()
