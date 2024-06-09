@@ -1,3 +1,5 @@
+@public
+
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
@@ -51,25 +53,17 @@ def plot_data(x_train, y_train, x_test, y_test, title, show_true_function, x_min
     return fig
 
 # Plot predictions
-def plot_predictions(x_train, y_train, x_test, y_test, model, title, show_true_function, x_min, x_max, data_type):
-    x_range = np.linspace(x_min, x_max, 1000)
-    y_pred_train = model.predict(x_train).flatten()
-    y_pred_test = model.predict(x_test).flatten()
-    y_pred_line_train = model.predict(x_range).flatten()
-    y_pred_line_test = model.predict(x_range).flatten()
+def plot_predictions(x, y, model, title, show_true_function, x_min, x_max, data_type):
+    y_pred_points = model.predict(x).flatten()
 
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data', marker=dict(color='blue')))
-    fig.add_trace(go.Scatter(x=x_train, y=y_pred_train, mode='markers', name='Train Prediction Points', marker=dict(color='green')))
-    fig.add_trace(go.Scatter(x=x_range, y=y_pred_line_train, mode='lines', name='Train Prediction Line', line=dict(color='green')))
-
-    fig.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data', marker=dict(color='red')))
-    fig.add_trace(go.Scatter(x=x_test, y=y_pred_test, mode='markers', name='Test Prediction Points', marker=dict(color='orange')))
-    fig.add_trace(go.Scatter(x=x_range, y=y_pred_line_test, mode='lines', name='Test Prediction Line', line=dict(color='orange')))
+    fig.add_trace(go.Scatter(x=x, y=y, mode='markers', name=f'{data_type} Data', marker=dict(color='blue' if data_type == 'Train' else 'red')))
+    fig.add_trace(go.Scatter(x=x, y=y_pred_points, mode='markers', name='Prediction Points', marker=dict(color='green')))
 
     if show_true_function:
+        x_range = np.linspace(x_min, x_max, 1000)
         y_true = true_function(x_range)
-        fig.add_trace(go.Scatter(x=x_range, y=y_true, mode='lines', name='True Function', line=dict(color='purple')))
+        fig.add_trace(go.Scatter(x=x_range, y=y_true, mode='lines', name='True Function', line=dict(color='orange')))
 
     fig.update_layout(title=title)
     return fig
@@ -88,22 +82,22 @@ def main(N, noise_variance, x_min, x_max, num_layers, neurons_per_layer, epochs_
     # Unnoisy model
     model_unnoisy = create_model(num_layers, neurons_per_layer)
     model_unnoisy, loss_unnoisy_train = train_model(x_train, y_train, epochs_unnoisy, model_unnoisy)
-    unnoisy_plot_train = plot_predictions(x_train, y_train, x_test, y_test, model_unnoisy, "Unnoisy Model - Train Data", show_true_function, x_min, x_max, "Train")
-    unnoisy_plot_test = plot_predictions(x_train, y_train, x_test, y_test, model_unnoisy, "Unnoisy Model - Test Data", show_true_function, x_min, x_max, "Test")
+    unnoisy_plot_train = plot_predictions(x_train, y_train, model_unnoisy, "Unnoisy Model - Train Data", show_true_function, x_min, x_max, "Train")
+    unnoisy_plot_test = plot_predictions(x_test, y_test, model_unnoisy, "Unnoisy Model - Test Data", show_true_function, x_min, x_max, "Test")
     loss_unnoisy_test = model_unnoisy.evaluate(x_test, y_test, verbose=0)
 
     # Best-fit model
     model_best_fit = create_model(num_layers, neurons_per_layer)
     model_best_fit, loss_best_fit_train = train_model(x_train, y_train_noisy, epochs_best_fit, model_best_fit)
-    best_fit_plot_train = plot_predictions(x_train, y_train_noisy, x_test, y_test_noisy, model_best_fit, "Best-Fit Model - Train Data", show_true_function, x_min, x_max, "Train")
-    best_fit_plot_test = plot_predictions(x_train, y_train_noisy, x_test, y_test_noisy, model_best_fit, "Best-Fit Model - Test Data", show_true_function, x_min, x_max, "Test")
+    best_fit_plot_train = plot_predictions(x_train, y_train_noisy, model_best_fit, "Best-Fit Model - Train Data", show_true_function, x_min, x_max, "Train")
+    best_fit_plot_test = plot_predictions(x_test, y_test_noisy, model_best_fit, "Best-Fit Model - Test Data", show_true_function, x_min, x_max, "Test")
     loss_best_fit_test = model_best_fit.evaluate(x_test, y_test_noisy, verbose=0)
 
     # Overfit model
     model_overfit = create_model(num_layers, neurons_per_layer)
     model_overfit, loss_overfit_train = train_model(x_train, y_train_noisy, epochs_overfit, model_overfit)
-    overfit_plot_train = plot_predictions(x_train, y_train_noisy, x_test, y_test_noisy, model_overfit, "Overfit Model - Train Data", show_true_function, x_min, x_max, "Train")
-    overfit_plot_test = plot_predictions(x_train, y_train_noisy, x_test, y_test_noisy, model_overfit, "Overfit Model - Test Data", show_true_function, x_min, x_max, "Test")
+    overfit_plot_train = plot_predictions(x_train, y_train_noisy, model_overfit, "Overfit Model - Train Data", show_true_function, x_min, x_max, "Train")
+    overfit_plot_test = plot_predictions(x_test, y_test_noisy, model_overfit, "Overfit Model - Test Data", show_true_function, x_min, x_max, "Test")
     loss_overfit_test = model_overfit.evaluate(x_test, y_test_noisy, verbose=0)
 
     return (noiseless_plot, noisy_plot,
