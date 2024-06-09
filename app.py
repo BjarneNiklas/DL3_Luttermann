@@ -110,7 +110,7 @@ inputs = [
     gr.Slider(50, 500, step=10, value=100, label="Epochs (Unnoisy Model)"),
     gr.Slider(50, 500, step=10, value=200, label="Epochs (Best-Fit Model)"),
     gr.Slider(50, 500, step=10, value=500, label="Epochs (Overfit Model)"),
-    gr.Checkbox(label="Show True Function", default=True)
+    gr.Checkbox(label="Show True Function", value=True)
 ]
 
 outputs = [
