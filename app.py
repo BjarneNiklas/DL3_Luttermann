@@ -136,14 +136,11 @@ The code follows a modular structure, with separate functions for each task, mak
 """
 
 # Gradio Interface
-data_settings = [
+settings = [
     gr.Slider(50, 200, step=1, value=100, label="Data Points (N)"),
     gr.Slider(0.01, 0.1, step=0.01, value=0.05, label="Noise Variance (V)"),
     gr.Slider(-3, -1, step=0.1, value=-2.0, label="X Min"),
-    gr.Slider(1, 3, step=0.1, value=2.0, label="X Max")
-]
-
-model_settings = [
+    gr.Slider(1, 3, step=0.1, value=2.0, label="X Max"),
     gr.Slider(1, 5, step=1, value=2, label="Number of Hidden Layers"),
     gr.Slider(50, 200, step=10, value=100, label="Neurons per Hidden Layer"),
     gr.Slider(10, 500, step=10, value=100, label="Epochs (Unnoisy Model)"),
@@ -155,28 +152,19 @@ model_settings = [
 outputs = [
     gr.Plot(label="Noiseless Datasets"),
     gr.Plot(label="Noisy Datasets"),
-    gr.Plot(label="Unnoisy Model - Train Data", visible=False),
-    gr.Textbox(label="Unnoisy Model Losses", visible=False),
-    gr.Plot(label="Unnoisy Model - Test Data", visible=False),
-    gr.Plot(label="Best-Fit Model - Train Data", visible=False),
-    gr.Textbox(label="Best-Fit Model Losses", visible=False),
-    gr.Plot(label="Best-Fit Model - Test Data", visible=False),
-    gr.Plot(label="Overfit Model - Train Data", visible=False),
-    gr.Textbox(label="Overfit Model Losses", visible=False),
-    gr.Plot(label="Overfit Model - Test Data", visible=False)
+    gr.Plot(label="Unnoisy Model - Train Data"),
+    gr.Textbox(label="Unnoisy Model Losses"),
+    gr.Plot(label="Unnoisy Model - Test Data"),
+    gr.Plot(label="Best-Fit Model - Train Data"),
+    gr.Textbox(label="Best-Fit Model Losses"),
+    gr.Plot(label="Best-Fit Model - Test Data"),
+    gr.Plot(label="Overfit Model - Train Data"),
+    gr.Textbox(label="Overfit Model Losses"),
+    gr.Plot(label="Overfit Model - Test Data")
 ]
 
-def generate_data_wrapper(*args):
-    noiseless_plot, noisy_plot = generate_data(*args)
-    reset_outputs(outputs)
-    return [noiseless_plot, noisy_plot] + [None] * 9  # Fülle die restlichen Ausgaben mit None
-
-def train_models_wrapper(*args):
+def train_models(*args):
     return main(*args)
-
-def reset_outputs(outputs):
-    for output in outputs[2:]:
-        output.update(visible=False)
 
 demo = gr.Blocks()
 
@@ -185,16 +173,9 @@ with demo:
     gr.Markdown(discussion)
 
     with gr.Column():
-        gr.Markdown("### Data Settings")
-        for input_widget in data_settings:
+        gr.Markdown("### Settings")
+        for input_widget in settings:
             input_widget.render()
-        generate_data_btn = gr.Button("Generate Data")
-
-    with gr.Column():
-        gr.Markdown("### Model Training Settings")
-        for input_widget in model_settings:
-            input_widget.render()
-        train_models_btn = gr.Button("Train Models")
 
     with gr.Row():
         with gr.Column():
@@ -231,7 +212,7 @@ with demo:
             gr.Markdown("### Overfit Model - Test Data")
             outputs[10].render()
 
-    generate_data_btn.click(generate_data_wrapper, inputs=data_settings, outputs=outputs)
-    train_models_btn.click(train_models_wrapper, inputs=data_settings + model_settings, outputs=outputs)
+    train_models_btn = gr.Button("Train Models")
+    train_models_btn.click(train_models, inputs=settings, outputs=outputs)
 
 demo.launch()
