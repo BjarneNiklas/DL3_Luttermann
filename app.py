@@ -102,6 +102,21 @@ def main(N, noise_variance, x_min, x_max, num_layers, neurons_per_layer, epochs_
             best_fit_plot_train, f"Train Loss: {loss_best_fit_train:.4f} | Test Loss: {loss_best_fit_test:.4f}", best_fit_plot_test,
             overfit_plot_train, f"Train Loss: {loss_overfit_train:.4f} | Test Loss: {loss_overfit_test:.4f}", overfit_plot_test)
 
+
+# Diskussion mit Experimenten und Resultaten
+discussion = """
+## Experimente, Resultate und Diskussion
+
+Zunächst ist dies ein übliches reales Szenario: Mit dem FFNN können z. B. verrauschte Daten trainiert werden aus der für die Modelle unbekannten Ground-Truth-Funktion.\n
+Deswegen generiere ich Datenpunkte aus einer gegebenen Funktion und füge Rauschen hinzu, um Bedingungen der echten Welt zu simulieren (Aufteilen in Trainings- und Testdaten). Im Rahmen des gesamten Trainings müssen die Testdaten unberührt bleiben.\n
+
+Trainiert werden drei Modelle: eines mit den Daten ohne Rauschen (clean model), eines mit den verrauschten Daten für die beste Anpassung (Best-Fit-Modell) und eines zur Demonstration von Overfitting mit den verrauschten Daten mit einer höheren Anzahl von Trainings-Epochen.\n\n
+
+Die meisten Parameter wurden so eingestellt wie vorgegeben (siehe Einstellmöglichkeiten unter "Datengenerierung" und "Modell-Definition" in der Lösung. Was angepasst wurde, sind die Trainings-Epochen für die verschiedenen Modelle, die im Folgenden kurz erläutert werden: \n
+
+
+"""
+
 # Gradio Interface
 inputs = [
     gr.Slider(10, 250, step=1, value=100, label="Anzahl der Datenpunkte (N)"),
@@ -248,19 +263,5 @@ with demo:
             gr.Markdown("""### Medieninformatik-Wahlpflichtmodul: Deep Learning - ESA 2""")
         with gr.Column():
             gr.Markdown("""### Erstellt und abgegeben am 10. Juni 2024 von: Bjarne Niklas Luttermann (373960, TH Lübeck)""")
-
-# Diskussion mit Experimenten und Resultaten
-discussion = """
-## Experimente, Resultate und Diskussion
-
-Zunächst ist dies ein übliches reales Szenario: Mit dem FFNN können z. B. verrauschte Daten trainiert werden aus der für die Modelle unbekannten Ground-Truth-Funktion.\n
-Deswegen generiere ich Datenpunkte aus einer gegebenen Funktion und füge Rauschen hinzu, um Bedingungen der echten Welt zu simulieren (Aufteilen in Trainings- und Testdaten). Im Rahmen des gesamten Trainings müssen die Testdaten unberührt bleiben.\n
-
-Trainiert werden drei Modelle: eines mit den Daten ohne Rauschen (clean model), eines mit den verrauschten Daten für die beste Anpassung (Best-Fit-Modell) und eines zur Demonstration von Overfitting mit den verrauschten Daten mit einer höheren Anzahl von Trainings-Epochen.\n\n
-
-Die meisten Parameter wurden so eingestellt wie vorgegeben (siehe Einstellmöglichkeiten unter "Datengenerierung" und "Modell-Definition" in der Lösung. Was angepasst wurde, sind die Trainings-Epochen für die verschiedenen Modelle, die im Folgenden kurz erläutert werden: \n
-
-
-"""
 
 demo.launch()
