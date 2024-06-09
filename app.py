@@ -1,3 +1,5 @@
+@public
+
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
@@ -63,7 +65,7 @@ def plot_predictions(x, y, model, title, show_true_function, x_min, x_max, data_
         y_true = true_function(x_range)
         fig.add_trace(go.Scatter(x=x_range, y=y_true, mode='lines', name='True Function', line=dict(color='orange')))
 
-    fig.update_layout(title=title)
+    fig.update_layout(title_text=title)
     return fig
 
 # Main function to handle training and plotting
@@ -131,29 +133,37 @@ The code follows a modular structure, with separate functions for each task, mak
 
 # Gradio Interface
 inputs = [
-    gr.Slider(50, 200, step=1, value=100, label="Data Points (N)"),
-    gr.Slider(0.01, 0.1, step=0.01, value=0.05, label="Noise Variance (V)"),
-    gr.Slider(-3, -1, step=0.1, value=-2.0, label="X Min"),
-    gr.Slider(1, 3, step=0.1, value=2.0, label="X Max"),
-    gr.Slider(1, 5, step=1, value=2, label="Number of Hidden Layers"),
-    gr.Slider(50, 200, step=10, value=100, label="Neurons per Hidden Layer"),
-    gr.Slider(10, 500, step=10, value=100, label="Epochs (Unnoisy Model)"),
+    gr.Slider(250, 250, step=1, value=100, label="Data Points (N)"),
+    gr.Slider(0.01, 0.5, step=0.01, value=0.05, label="Noise Variance (V)"),
+    gr.Slider(-10, -1, step=0.1, value=-2.0, label="X Min"),
+    gr.Slider(1, 10, step=0.1, value=2.0, label="X Max"),
+    gr.Slider(1, 10, step=1, value=2, label="Number of Hidden Layers"),
+    gr.Slider(10, 250, step=10, value=100, label="Neurons per Hidden Layer"),
+    gr.Slider(10, 250, step=10, value=100, label="Epochs (Unnoisy Model)"),
     gr.Slider(100, 500, step=10, value=200, label="Epochs (Best-Fit Model)"),
-    gr.Slider(500, 2000, step=10, value=500, label="Epochs (Overfit Model)"),
+    gr.Slider(400, 2500, step=10, value=500, label="Epochs (Overfit Model)"),
     gr.Checkbox(value=True, label="Show True Function")
 ]
 
 outputs = [
+    gr.Markdown("### Noiseless Datasets"),
     gr.Plot(label="Noiseless Datasets"),
+    gr.Markdown("### Noisy Datasets"),
     gr.Plot(label="Noisy Datasets"),
+    gr.Markdown("### Unnoisy Model - Train Data"),
     gr.Plot(label="Unnoisy Model - Train Data"),
     gr.Textbox(label="Unnoisy Model Losses"),
+    gr.Markdown("### Unnoisy Model - Test Data"),
     gr.Plot(label="Unnoisy Model - Test Data"),
+    gr.Markdown("### Best-Fit Model - Train Data"),
     gr.Plot(label="Best-Fit Model - Train Data"),
     gr.Textbox(label="Best-Fit Model Losses"),
+    gr.Markdown("### Best-Fit Model - Test Data"),
     gr.Plot(label="Best-Fit Model - Test Data"),
+    gr.Markdown("### Overfit Model - Train Data"),
     gr.Plot(label="Overfit Model - Train Data"),
     gr.Textbox(label="Overfit Model Losses"),
+    gr.Markdown("### Overfit Model - Test Data"),
     gr.Plot(label="Overfit Model - Test Data")
 ]
 
@@ -180,30 +190,37 @@ with demo:
     with gr.Column():
         for input_widget in inputs:
             input_widget.render()
+    initial_output = wrapper(*[input.value for input in inputs])
     gr.Button("Generate Data and Train Models").click(wrapper, inputs, outputs)
     with gr.Row():
         with gr.Column():
             outputs[0].render()
-        with gr.Column():
-            outputs[1].render()
-    with gr.Row():
+            outputs[1].render(initial_output[0])
         with gr.Column():
             outputs[2].render()
-            outputs[3].render()
+            outputs[3].render(initial_output[1])
+    with gr.Row():
         with gr.Column():
             outputs[4].render()
-    with gr.Row():
-        with gr.Column():
-            outputs[5].render()
-            outputs[6].render()
+            outputs[5].render(initial_output[2])
+            outputs[6].render(initial_output[3])
         with gr.Column():
             outputs[7].render()
+            outputs[8].render(initial_output[4])
     with gr.Row():
         with gr.Column():
-            outputs[8].render()
             outputs[9].render()
+            outputs[10].render(initial_output[5])
+            outputs[11].render(initial_output[6])
         with gr.Column():
-            outputs[10].render()
-    inputs[9].change(fn=update_true_function, inputs=inputs, outputs=[outputs[0], outputs[1], outputs[2], outputs[4], outputs[5], outputs[7], outputs[8], outputs[10]])
+            outputs[12].render(initial_output[7])
+    with gr.Row():
+        with gr.Column():
+            outputs[13].render()
+            outputs[14].render(initial_output[8])
+            outputs[15].render(initial_output[9])
+        with gr.Column():
+            outputs[16].render(initial_output[10])
+    inputs[9].change(fn=update_true_function, inputs=inputs, outputs=[outputs[1], outputs[3], outputs[5], outputs[8], outputs[10], outputs[13], outputs[14], outputs[17]])
 
 demo.launch()
