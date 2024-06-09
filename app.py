@@ -123,40 +123,38 @@ def wrapper(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs
 
 # Define the interface
 with gr.Blocks() as demo:
-    with gr.Column():
-        gr.Markdown("## Regression with Feed-Forward Neural Network")
-        
-        with gr.Row():
-            with gr.Column():
-                for input_widget in inputs:
-                    input_widget.render()
-                gr.Button("Generate Data and Train Models").click(wrapper, inputs, outputs)
-        
-        with gr.Row():
-            with gr.Column():
-                outputs[0].render()
-            with gr.Column():
-                outputs[1].render()
-        
-        with gr.Row():
-            with gr.Column():
-                outputs[2].render()
-                outputs[3].render()
-            with gr.Column():
-                outputs[4].render()
-        
-        with gr.Row():
-            with gr.Column():
-                outputs[5].render()
-                outputs[6].render()
-            with gr.Column():
-                outputs[7].render()
-        
-        with gr.Row():
-            with gr.Column():
-                outputs[8].render()
-                outputs[9].render()
-            with gr.Column():
-                outputs[10].render()
-        
+    gr.Markdown("## Regression with Feed-Forward Neural Network")
+    with gr.Row():
+        with gr.Column():
+            for input_widget in inputs:
+                input_widget.render()
+            gr.Button("Generate Data and Train Models").click(wrapper, inputs, outputs)
+    
+    with gr.Row():
+        with gr.Column():
+            outputs[0].render()
+        with gr.Column():
+            outputs[1].render()
+    
+    with gr.Row():
+        with gr.Column():
+            outputs[2].render()
+            outputs[3].render()
+        with gr.Column():
+            outputs[4].render()
+    
+    with gr.Row():
+        with gr.Column():
+            outputs[5].render()
+            outputs[6].render()
+        with gr.Column():
+            outputs[7].render()
+    
+    with gr.Row():
+        with gr.Column():
+            outputs[8].render()
+            outputs[9].render()
+        with gr.Column():
+            outputs[10].render()
+
 demo.launch()
