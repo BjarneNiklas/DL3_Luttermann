@@ -181,7 +181,7 @@ with demo:
         for input_widget in inputs:
             input_widget.render()
     gr.Button("Generate Data and Train Models").click(wrapper, inputs, outputs)
-       with gr.Row():
+    with gr.Row():
         with gr.Column():
             outputs[0].render()
         with gr.Column():
