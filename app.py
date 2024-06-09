@@ -53,9 +53,9 @@ def plot_predictions(model, x_train, y_train, x_test, y_test, title):
     
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data'))
-    fig.add_trace(go.Scatter(x=x_train, y=y_train_pred[:, 0], mode='markers', name='Train Prediction'))
+    fig.add_trace(go.Scatter(x=x_train, y=y_train_pred[:, 0], mode='lines', name='Train Prediction'))
     fig.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data'))
-    fig.add_trace(go.Scatter(x=x_test, y=y_test_pred[:, 0], mode='markers', name='Test Prediction'))
+    fig.add_trace(go.Scatter(x=x_test, y=y_test_pred[:, 0], mode='lines', name='Test Prediction'))
     fig.update_layout(title=title)
     return fig
 
@@ -85,24 +85,25 @@ def main(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_ov
     return noiseless_plot, noisy_plot, unnoisy_plot_train, unnoisy_plot_test, best_fit_plot_train, best_fit_plot_test, overfit_plot_train, overfit_plot_test
 
 # Gradio Interface
+inputs = [
+    gr.Slider(50, 200, step=1, value=100, label="Data Points (N)"),
+    gr.Slider(0.01, 0.1, step=0.01, value=0.05, label="Noise Variance (V)"),
+    gr.Slider(-3, -1, step=0.1, value=-2.0, label="X Min"),
+    gr.Slider(1, 3, step=0.1, value=2.0, label="X Max"),
+    gr.Slider(50, 200, step=1, value=100, label="Epochs for Unnoisy Model"),
+    gr.Slider(100, 300, step=1, value=200, label="Epochs for Best-Fit Model"),
+    gr.Slider(300, 600, step=1, value=500, label="Epochs for Overfit Model")
+]
+
+outputs = [gr.Plot() for _ in range(8)]
+
 interface = gr.Interface(
     fn=main,
-    inputs=[
-        gr.Slider(50, 200, step=1, value=100, label="Data Points (N)"),
-        gr.Slider(0.01, 0.1, step=0.01, value=0.05, label="Noise Variance (V)"),
-        gr.Slider(-3, -1, step=0.1, value=-2.0, label="X Min"),
-        gr.Slider(1, 3, step=0.1, value=2.0, label="X Max"),
-        gr.Slider(50, 200, step=1, value=100, label="Epochs for Unnoisy Model"),
-        gr.Slider(100, 300, step=1, value=200, label="Epochs for Best-Fit Model"),
-        gr.Slider(300, 600, step=1, value=500, label="Epochs for Overfit Model")
-    ],
-    outputs=[
-        gr.Plot(), gr.Plot(),
-        gr.Plot(), gr.Plot(),
-        gr.Plot(), gr.Plot(),
-        gr.Plot(), gr.Plot()
-    ],
-    layout="horizontal"
+    inputs=inputs,
+    outputs=outputs,
+    title="Regression Learning with Feed-Forward Neural Network",
+    description="Train and evaluate models on noiseless and noisy datasets",
+    layout="grid"
 )
 
 interface.launch()
