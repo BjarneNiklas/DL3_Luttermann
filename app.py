@@ -14,8 +14,8 @@ def true_function(x):
 def generate_data(N, noise_variance, x_min, x_max):
     x = np.random.uniform(x_min, x_max, N)
     y = true_function(x)
-    x_train, x_test = np.split(x, 2)
-    y_train, y_test = np.split(y, 2)
+    x_train, x_test = x[:N//2], x[N//2:]
+    y_train, y_test = y[:N//2], y[N//2:]
 
     noise_train = np.random.normal(0, noise_variance**0.5, y_train.shape)
     noise_test = np.random.normal(0, noise_variance**0.5, y_test.shape)
@@ -160,5 +160,7 @@ with gr.Blocks() as demo:
         with gr.Column():
             outputs[8].render()
             outputs[9].render()
+        with gr.Column():
+            outputs[10].render()
 
 demo.launch()
