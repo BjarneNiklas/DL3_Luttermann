@@ -101,8 +101,7 @@ inputs = [
     gr.Slider(1, 3, step=0.1, value=2.0, label="X Max"),
     gr.Slider(50, 500, step=10, value=100, label="Epochs (Unnoisy Model)"),
     gr.Slider(50, 500, step=10, value=200, label="Epochs (Best-Fit Model)"),
-    gr.Slider(50, 500, step=10, value=500, label="Epochs (Overfit Model)"),
-    gr.Button("Generate Data and Train Models")
+    gr.Slider(50, 500, step=10, value=500, label="Epochs (Overfit Model)")
 ]
 
 outputs = [
@@ -129,14 +128,9 @@ with gr.Blocks() as demo:
         
         with gr.Row():
             with gr.Column():
-                inputs[0].render()
-                inputs[1].render()
-                inputs[2].render()
-                inputs[3].render()
-                inputs[4].render()
-                inputs[5].render()
-                inputs[6].render()
-                inputs[7].click(wrapper, inputs[:7], outputs)
+                for input_widget in inputs:
+                    input_widget.render()
+                gr.Button("Generate Data and Train Models").click(wrapper, inputs, outputs)
         
         with gr.Row():
             with gr.Column():
