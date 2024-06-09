@@ -137,10 +137,10 @@ The code follows a modular structure, with separate functions for each task, mak
 
 # Gradio Interface
 data_settings = [
-    gr.Slider(50, 200, step=1, value=100, label="Data Points (N)"),
-    gr.Slider(0.01, 0.1, step=0.01, value=0.05, label="Noise Variance (V)"),
-    gr.Slider(-3, -1, step=0.1, value=-2.0, label="X Min"),
-    gr.Slider(1, 3, step=0.1, value=2.0, label="X Max")
+    gr.Slider(20, 250, step=1, value=100, label="Data Points (N)"),
+    gr.Slider(0.01, 0.5, step=0.01, value=0.05, label="Noise Variance (V)"),
+    gr.Slider(-10, -1, step=0.1, value=-2.0, label="X Min"),
+    gr.Slider(1, 10, step=0.1, value=2.0, label="X Max")
 ]
 
 model_settings = [
@@ -166,10 +166,6 @@ outputs = [
     gr.Plot(label="Overfit Model - Test Data")
 ]
 
-def generate_data_wrapper(*args):
-    noiseless_plot, noisy_plot = generate_data(*args)
-    return [noiseless_plot, noisy_plot] + [go.Figure()] * 9  # Fülle die restlichen Ausgaben mit leeren Plots
-
 def train_models_wrapper(*args):
     return main(*args)
 
@@ -183,13 +179,12 @@ with demo:
         gr.Markdown("### Data Settings")
         for input_widget in data_settings:
             input_widget.render()
-        generate_data_btn = gr.Button("Generate Data")
 
     with gr.Column():
         gr.Markdown("### Model Training Settings")
         for input_widget in model_settings:
             input_widget.render()
-        train_models_btn = gr.Button("Train Models")
+        train_models_btn = gr.Button("Generate Data and Train Models")
 
     with gr.Row():
         with gr.Column():
@@ -226,7 +221,6 @@ with demo:
             gr.Markdown("### Overfit Model - Test Data")
             outputs[10].render()
 
-    generate_data_btn.click(generate_data_wrapper, inputs=data_settings, outputs=outputs)
     train_models_btn.click(train_models_wrapper, inputs=data_settings + model_settings, outputs=outputs)
 
 demo.launch()
