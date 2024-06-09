@@ -11,7 +11,59 @@ def true_function(x):
     return 0.5 * (x + 0.8) * (x + 1.8) * (x - 0.2) * (x - 0.3) * (x - 1.9) + 1
 
 # Data Generation
-# ... (same as before)
+def generate_data(N, noise_variance, x_min, x_max):
+    x = np.random.uniform(x_min, x_max, N)
+    y = true_function(x)
+    x_train, x_test = x[:N//2], x[N//2:]
+    y_train, y_test = y[:N//2], y[N//2:]
+    noise_train = np.random.normal(0, noise_variance**0.5, y_train.shape)
+    noise_test = np.random.normal(0, noise_variance**0.5, y_test.shape)
+    y_train_noisy = y_train + noise_train
+    y_test_noisy = y_test + noise_test
+    return x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy
+
+    
+# Model Definition
+def create_model(num_layers, neurons_per_layer):
+    model = Sequential()
+    model.add(Dense(neurons_per_layer, activation='relu', input_dim=1))
+    for _ in range(num_layers - 1):
+        model.add(Dense(neurons_per_layer, activation='relu'))
+    model.add(Dense(1, activation='linear'))
+    model.compile(optimizer=Adam(learning_rate=0.01), loss='mean_squared_error')
+    return model
+
+# Model Training
+def train_model(x_train, y_train, epochs, model):
+    history = model.fit(x_train, y_train, epochs=epochs, batch_size=32, verbose=0)
+    return model, history.history['loss'][-1]
+
+# Data Plotting
+def plot_data(x_train, y_train, x_test, y_test, title, show_true_function, x_min, x_max):
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data', marker=dict(color='blue')))
+    fig.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data', marker=dict(color='red')))
+    if show_true_function:
+        x_range = np.linspace(x_min, x_max, 1000)
+        y_true = true_function(x_range)
+        fig.add_trace(go.Scatter(x=x_range, y=y_true, mode='lines', name='True Function', line=dict(color='green')))
+    fig.update_layout(title=title)
+    return fig
+
+# Prediction Plotting
+def plot_predictions(x, y, model, title, show_true_function, x_min, x_max, data_type):
+    x_range = np.linspace(x_min, x_max, 1000)
+    y_pred = model.predict(x_range).flatten()
+    y_pred_points = model.predict(x).flatten()
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=x, y=y, mode='markers', name=f'{data_type} Data', marker=dict(color='blue' if data_type == 'Train' else 'red')))
+    fig.add_trace(go.Scatter(x=x, y=y_pred_points, mode='markers', name='Prediction Points', marker=dict(color='green')))
+    fig.add_trace(go.Scatter(x=x_range, y=y_pred, mode='lines', name='Prediction Line', line=dict(color='green')))
+    if show_true_function:
+        y_true = true_function(x_range)
+        fig.add_trace(go.Scatter(x=x_range, y=y_true, mode='lines', name='True Function', line=dict(color='orange')))
+    fig.update_layout(title=title)
+    return fig
 
 # Main Function
 def main(N, noise_variance, x_min, x_max, num_layers, neurons_per_layer, epochs_unnoisy, epochs_best_fit, epochs_overfit, show_true_function):
@@ -52,9 +104,6 @@ def main(N, noise_variance, x_min, x_max, num_layers, neurons_per_layer, epochs_
             best_fit_plot_test,
             gr.Row([overfit_plot_train, gr.Textbox(f"Train Loss: {loss_overfit_train:.4f}", visible=True), gr.Textbox(f"Test Loss: {loss_overfit_test:.4f}", visible=True)]),
             overfit_plot_test)
-
-# Discussion and Documentation
-# ... (same as before)
 
 # Gradio Interface
 inputs = [
