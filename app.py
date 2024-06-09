@@ -1,5 +1,3 @@
-@public
-
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
@@ -139,9 +137,9 @@ inputs = [
     gr.Slider(1, 10, step=0.1, value=2.0, label="X Max"),
     gr.Slider(1, 10, step=1, value=2, label="Number of Hidden Layers"),
     gr.Slider(10, 250, step=10, value=100, label="Neurons per Hidden Layer"),
-    gr.Slider(10, 250, step=10, value=100, label="Epochs (Unnoisy Model)"),
+    gr.Slider(10, 250, step=10, value=150, label="Epochs (Unnoisy Model)"),
     gr.Slider(100, 500, step=10, value=200, label="Epochs (Best-Fit Model)"),
-    gr.Slider(400, 2500, step=10, value=500, label="Epochs (Overfit Model)"),
+    gr.Slider(400, 2500, step=10, value=600, label="Epochs (Overfit Model)"),
     gr.Checkbox(value=True, label="Show True Function")
 ]
 
