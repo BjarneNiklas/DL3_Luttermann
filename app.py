@@ -225,7 +225,7 @@ with demo:
             outputs[10].render()
     with gr.Row():
         outputs[9].render()
-    inputs[9].change(fn=update_original_function, inputs=inputs, outputs=[outputs[0], outputs[1], outputs[2], outputs[4], outputs[5], outputs[7], outputs[8], outputs[10
+    inputs[9].change(fn=update_original_function, inputs=inputs, outputs=[outputs[0], outputs[1], outputs[2], outputs[4], outputs[5], outputs[7], outputs[8], outputs[10]
 
     gr.Markdown(discussion)
 
