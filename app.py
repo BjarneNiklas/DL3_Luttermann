@@ -14,8 +14,8 @@ def true_function(x):
 def generate_data(N, noise_variance, x_min, x_max):
     x = np.random.uniform(x_min, x_max, N)
     y = true_function(x)
-    x_train, x_test = x[:N//2], x[N//2:]
-    y_train, y_test = y[:N//2], y[N//2:]
+    x_train, x_test = np.split(x, 2)
+    y_train, y_test = np.split(y, 2)
 
     noise_train = np.random.normal(0, noise_variance**0.5, y_train.shape)
     noise_test = np.random.normal(0, noise_variance**0.5, y_test.shape)
@@ -41,51 +41,56 @@ def train_model(x_train, y_train, epochs):
     return model, history.history['loss'][-1]
 
 # Plot data
-def plot_data(x_train, y_train, x_test, y_test, title):
+def plot_data(x_train, y_train, x_test, y_test, title, show_true_function):
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data', marker=dict(color='blue')))
     fig.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data', marker=dict(color='red')))
+    if show_true_function:
+        x_range = np.linspace(min(x_train), max(x_train), 1000)
+        y_true = true_function(x_range)
+        fig.add_trace(go.Scatter(x=x_range, y=y_true, mode='lines', name='True Function', line=dict(color='green')))
     fig.update_layout(title=title)
     return fig
 
 # Plot predictions
-def plot_predictions(x_train, y_train, x_test, y_test, model, title):
-    x_range = np.linspace(min(x_train), max(x_train), 1000)
+def plot_predictions(x, y, model, title, show_true_function):
+    x_range = np.linspace(min(x), max(x), 1000)
     y_pred = model.predict(x_range).flatten()
-    
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data', marker=dict(color='blue')))
-    fig.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data', marker=dict(color='red')))
-    fig.add_trace(go.Scatter(x=x_range, y=y_pred, mode='lines', name='Prediction', line=dict(color='green')))
+    fig.add_trace(go.Scatter(x=x, y=y, mode='markers', name='Data', marker=dict(color='blue')))
+    fig.add_trace(go.Scatter(x=x_range, y=y_pred, mode='lines', name='Prediction', line=dict(color='red')))
+    if show_true_function:
+        y_true = true_function(x_range)
+        fig.add_trace(go.Scatter(x=x_range, y=y_true, mode='lines', name='True Function', line=dict(color='green')))
     fig.update_layout(title=title)
     return fig
 
-def main(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_overfit):
+def main(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_overfit, show_true_function):
     # Generate data
     x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy = generate_data(N, noise_variance, x_min, x_max)
     
     # Noiseless data plot
-    noiseless_plot = plot_data(x_train, y_train, x_test, y_test, "Noiseless Datasets")
+    noiseless_plot = plot_data(x_train, y_train, x_test, y_test, "Noiseless Datasets", show_true_function)
     
     # Noisy data plot
-    noisy_plot = plot_data(x_train, y_train_noisy, x_test, y_test_noisy, "Noisy Datasets")
+    noisy_plot = plot_data(x_train, y_train_noisy, x_test, y_test_noisy, "Noisy Datasets", show_true_function)
     
     # Unnoisy model
     model_unnoisy, loss_unnoisy = train_model(x_train, y_train, epochs_unnoisy)
-    unnoisy_plot_train = plot_predictions(x_train, y_train, x_test, y_test, model_unnoisy, "Unnoisy Model - Train Data")
-    unnoisy_plot_test = plot_predictions(x_test, y_test, x_test, y_test, model_unnoisy, "Unnoisy Model - Test Data")
+    unnoisy_plot_train = plot_predictions(x_train, y_train, model_unnoisy, "Unnoisy Model - Train Data", show_true_function)
+    unnoisy_plot_test = plot_predictions(x_test, y_test, model_unnoisy, "Unnoisy Model - Test Data", show_true_function)
     loss_unnoisy_test = model_unnoisy.evaluate(x_test, y_test, verbose=0)
     
     # Best-fit model
     model_best, loss_best = train_model(x_train, y_train_noisy, epochs_best)
-    best_fit_plot_train = plot_predictions(x_train, y_train_noisy, x_test, y_test_noisy, model_best, "Best-Fit Model - Train Data")
-    best_fit_plot_test = plot_predictions(x_test, y_test_noisy, x_test, y_test_noisy, model_best, "Best-Fit Model - Test Data")
+    best_fit_plot_train = plot_predictions(x_train, y_train_noisy, model_best, "Best-Fit Model - Train Data", show_true_function)
+    best_fit_plot_test = plot_predictions(x_test, y_test_noisy, model_best, "Best-Fit Model - Test Data", show_true_function)
     loss_best_test = model_best.evaluate(x_test, y_test_noisy, verbose=0)
     
     # Overfit model
     model_overfit, loss_overfit = train_model(x_train, y_train_noisy, epochs_overfit)
-    overfit_plot_train = plot_predictions(x_train, y_train_noisy, x_test, y_test_noisy, model_overfit, "Overfit Model - Train Data")
-    overfit_plot_test = plot_predictions(x_test, y_test_noisy, x_test, y_test_noisy, model_overfit, "Overfit Model - Test Data")
+    overfit_plot_train = plot_predictions(x_train, y_train_noisy, model_overfit, "Overfit Model - Train Data", show_true_function)
+    overfit_plot_test = plot_predictions(x_test, y_test_noisy, model_overfit, "Overfit Model - Test Data", show_true_function)
     loss_overfit_test = model_overfit.evaluate(x_test, y_test_noisy, verbose=0)
     
     return (noiseless_plot, noisy_plot, 
@@ -101,7 +106,8 @@ inputs = [
     gr.Slider(1, 3, step=0.1, value=2.0, label="X Max"),
     gr.Slider(50, 500, step=10, value=100, label="Epochs (Unnoisy Model)"),
     gr.Slider(50, 500, step=10, value=200, label="Epochs (Best-Fit Model)"),
-    gr.Slider(50, 500, step=10, value=500, label="Epochs (Overfit Model)")
+    gr.Slider(50, 500, step=10, value=500, label="Epochs (Overfit Model)"),
+    gr.Checkbox(label="Show True Function", value=True)
 ]
 
 outputs = [
@@ -118,8 +124,8 @@ outputs = [
     gr.Plot(label="Overfit Model - Test Data")
 ]
 
-def wrapper(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_overfit):
-    return main(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_overfit)
+def wrapper(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_overfit, show_true_function):
+    return main(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_overfit, show_true_function)
 
 # Define the interface
 with gr.Blocks() as demo:
@@ -154,7 +160,5 @@ with gr.Blocks() as demo:
         with gr.Column():
             outputs[8].render()
             outputs[9].render()
-        with gr.Column():
-            outputs[10].render()
 
 demo.launch()
