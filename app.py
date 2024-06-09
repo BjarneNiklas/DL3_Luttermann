@@ -39,7 +39,7 @@ def train_model(x_train, y_train, epochs, model):
     return model, history.history['loss'][-1]
 
 # Plot data
-def plot_data(x_train, y_train, x_test, y_test, title, show_true_function, show_prediction_line, x_min, x_max):
+def plot_data(x_train, y_train, x_test, y_test, title, show_true_function, show_prediction_line, x_min, x_max, model=None):
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data', marker=dict(color='blue')))
     fig.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data', marker=dict(color='red')))
@@ -48,7 +48,7 @@ def plot_data(x_train, y_train, x_test, y_test, title, show_true_function, show_
         y_true = true_function(x_range)
         if show_true_function:
             fig.add_trace(go.Scatter(x=x_range, y=y_true, mode='lines', name='True Function', line=dict(color='green')))
-        if show_prediction_line:
+        if show_prediction_line and model is not None:
             y_pred = model.predict(x_range).flatten()
             fig.add_trace(go.Scatter(x=x_range, y=y_pred, mode='lines', name='Prediction Line', line=dict(color='orange')))
     fig.update_layout(title=title)
@@ -175,7 +175,8 @@ with demo:
     with gr.Column():
         for input_widget in inputs:
             input_widget.render()
-    gr.Button("Generate Data and Train Models").click(wrapper, inputs, outputs)
+    train_models_btn = gr.Button("Generate Data and Train Models")
+    train_models_btn.click(wrapper, inputs, outputs)
     gr.Markdown("### Noiseless Datasets")
     with gr.Row():
         with gr.Column():
