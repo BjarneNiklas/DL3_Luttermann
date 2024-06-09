@@ -136,9 +136,9 @@ inputs = [
     gr.Slider(1, 3, step=0.1, value=2.0, label="X Max"),
     gr.Slider(1, 5, step=1, value=2, label="Number of Hidden Layers"),
     gr.Slider(50, 200, step=10, value=100, label="Neurons per Hidden Layer"),
-    gr.Slider(50, 500, step=10, value=100, label="Epochs (Unnoisy Model)"),
-    gr.Slider(50, 500, step=10, value=200, label="Epochs (Best-Fit Model)"),
-    gr.Slider(50, 500, step=10, value=500, label="Epochs (Overfit Model)"),
+    gr.Slider(10, 500, step=10, value=100, label="Epochs (Unnoisy Model)"),
+    gr.Slider(100, 500, step=10, value=200, label="Epochs (Best-Fit Model)"),
+    gr.Slider(500, 2000, step=10, value=500, label="Epochs (Overfit Model)"),
     gr.Checkbox(value=True, label="Show True Function")
 ]
 
