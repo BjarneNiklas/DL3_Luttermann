@@ -228,5 +228,46 @@ with demo:
     inputs[9].change(fn=update_original_function, inputs=inputs, outputs=[outputs[0], outputs[1], outputs[2], outputs[4], outputs[5], outputs[7], outputs[8], outputs[10]])
 
     gr.Markdown(discussion)
+    with gr.Row():
+    with gr.Column():
+        gr.Markdown("""# Technische Dokumentation
+                Gradio: Zur Anzeige der UI-Elemente\n
+                TensorFlow Keras: Um das MobileNetV2-Modell zu laden und für die Funktionen zur Input-Vorverarbeitung und Dekodieren der Predictions\n
+                Plotly: Zur Visualisierung der Diagramme\n
+                Python Imaging Library (PIL): Um die Beispielbilder aus dem Pfad zu laden\n\n
+                Das Besondere an dieser Lösung ist die einfache Benutzerfreundlichkeit aufgrund des gewählten UI-Frameworks Gradio. Zudem ist sie einfach verständlich durch die populäre Python-Programmiersprache und dank der verschiedenen Bibliotheken beliebig erweiterbar.
+        """)
+    with gr.Column():
+        gr.Markdown("""
+                # Fachliche Dokumentation
+        
+                ## Ansatz:
+                Die Implementierung nutzt das MobileNetV2-Modell für die Bildklassifizierung. Es wurde mit dem ImageNet-Datensatz trainiert. 
+                Die Anwendung funktioniert folgendermaßen: Der Benutzer lädt ein Bild hoch, es passieren verschiedene logische Schritte und 
+                die Ergebnisse werden dem Benutzer in Form eines Balkendiagramms angezeigt (Klassenbeschriftung und Confidence). 
+
+                ## Logik:
+                Die Logik der Implementierung kann wie folgt unterteilt werden: \n
+                1. Das MobileNetV2-Modell wird mit den Standardgewichten initialisiert \n
+                2. Funktion zur Bildvorverabeitung (in ein Format konvertieren, das vom Modell erwartet wird) \n
+                3. Funktion zur Klassifizierung (gibt die 4 wahrscheinlichsten Klassen mit ihrer Confidence aus) \n
+                4. Funktion zur Visualisierung der Diagramme \n
+                5. Gradio zeigt die UI-Elemente an
+                    
+                ## Bildquellen und hilfreiche Links:
+                – Forza (2022): Forza Horizon 5 Series 7 Update. Online: https://forza.net/news/forza-horizon-5-series-7-update \n
+                – Gradio (o. A.): Image Classification in TensorFlow and Keras. Online: https://www.gradio.app/guides/image-classification-in-tensorflow \n
+                – Green Hills Ecotours (o. A.): Okapi Wildlife Reserve in DR Congo: Online: http://www.greenhillsecotours.com/okapi-wildlife-reserve-in-dr-congo/ \n
+                – Hugging Face (o. A.): Introduction to Gradio Blocks. Online: https://huggingface.co/learn/nlp-course/en/chapter9/7 \n
+                – Pixabay (JörgHerrich): Früchtekorb. Online: https://pixabay.com/de/illustrations/fr%C3%BCchtekorb-obst-obstkorb-8410566/ \n
+                – Pixabay (mreyati): AI Generated Golden Retriever. Online: https://pixabay.com/illustrations/ai-generated-golden-retriever-puppy-8601608/ \n
+                – Pixabay (sonharam0): Skotcho Eye, Ferris Wheel. Online: https://pixabay.com/photos/sokcho-eye-ferris-wheel-sky-7711019/ \n
+                – Pixabay (StockSnap): Jellyfish. Online: https://pixabay.com/photos/jellyfish-aquatic-animal-ocean-2566795/ 
+        """)
+    with gr.Row():
+        with gr.Column():
+            gr.Markdown("""### Medieninformatik-Wahlpflichtmodul: Deep Learning - ESA 2""")
+        with gr.Column():
+            gr.Markdown("""### Erstellt und abgegeben am 10. Juni 2024 von: Bjarne Niklas Luttermann (373960, TH Lübeck)""")
 
 demo.launch()
