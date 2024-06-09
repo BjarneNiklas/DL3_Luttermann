@@ -55,7 +55,10 @@ def plot_data(x_train, y_train, x_test, y_test, title, show_true_function, x_min
 # Plot predictions
 def plot_predictions(x, y, model, title, show_true_function, x_min, x_max, data_type):
     x_range = np.linspace(x_min, x_max, 1000)
-    y_pred = model.predict(x_range).flatten()
+    if data_type == "Unnoisy":
+        y_pred = model.predict(x_range).flatten()
+    else:
+        y_pred = model.predict(x).flatten()
     
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=x, y=y, mode='markers', name=f'{data_type} Data', marker=dict(color='blue' if data_type == 'Train' else 'red')))
@@ -103,14 +106,14 @@ def main(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_ov
 
 # Gradio Interface
 inputs = [
-    gr.Slider(50, 200, step=1, value=100, label="Data Points (N)"),
+    gr.Slider(10, 200, step=1, value=100, label="Data Points (N)"),
     gr.Slider(0.01, 0.1, step=0.01, value=0.05, label="Noise Variance (V)"),
-    gr.Slider(-2, 2, step=0.1, value=-2, label="X Min"),
-    gr.Slider(-2, 2, step=0.1, value=2, label="X Max"),
-    gr.Slider(50, 500, step=10, value=100, label="Epochs (Unnoisy Model)"),
-    gr.Slider(50, 500, step=10, value=200, label="Epochs (Best-Fit Model)"),
-    gr.Slider(50, 500, step=10, value=500, label="Epochs (Overfit Model)"),
-    gr.Checkbox(label="Show True Function", value=True)
+    gr.Slider(-20, -1, step=0.1, value=-2, label="X Min"),
+    gr.Slider(1, 20, step=0.1, value=2, label="X Max"),
+    gr.Slider(5, 2000, step=10, value=100, label="Epochs (Unnoisy Model)"),
+    gr.Slider(100, 500, step=10, value=200, label="Epochs (Best-Fit Model)"),
+    gr.Slider(500, 2000, step=10, value=500, label="Epochs (Overfit Model)"),
+    gr.Checkbox(label="Show True Function", default=True)
 ]
 
 outputs = [
