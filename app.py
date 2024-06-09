@@ -155,27 +155,23 @@ model_settings = [
 outputs = [
     gr.Plot(label="Noiseless Datasets"),
     gr.Plot(label="Noisy Datasets"),
-    gr.Plot(label="Unnoisy Model - Train Data", visible=False),
-    gr.Textbox(label="Unnoisy Model Losses", visible=False),
-    gr.Plot(label="Unnoisy Model - Test Data", visible=False),
-    gr.Plot(label="Best-Fit Model - Train Data", visible=False),
-    gr.Textbox(label="Best-Fit Model Losses", visible=False),
-    gr.Plot(label="Best-Fit Model - Test Data", visible=False),
-    gr.Plot(label="Overfit Model - Train Data", visible=False),
-    gr.Textbox(label="Overfit Model Losses", visible=False),
-    gr.Plot(label="Overfit Model - Test Data", visible=False)
+    gr.Plot(label="Unnoisy Model - Train Data"),
+    gr.Textbox(label="Unnoisy Model Losses"),
+    gr.Plot(label="Unnoisy Model - Test Data"),
+    gr.Plot(label="Best-Fit Model - Train Data"),
+    gr.Textbox(label="Best-Fit Model Losses"),
+    gr.Plot(label="Best-Fit Model - Test Data"),
+    gr.Plot(label="Overfit Model - Train Data"),
+    gr.Textbox(label="Overfit Model Losses"),
+    gr.Plot(label="Overfit Model - Test Data")
 ]
 
 def generate_data_wrapper(*args):
     noiseless_plot, noisy_plot = generate_data(*args)
-    return [noiseless_plot, noisy_plot] + [None] * 9  # Fülle die restlichen Ausgaben mit None
+    return [noiseless_plot, noisy_plot] + [go.Figure()] * 9  # Fülle die restlichen Ausgaben mit leeren Plots
 
 def train_models_wrapper(*args):
     return main(*args)
-
-def reset_outputs(event=None):
-    for output in outputs[2:]:
-        output.update(visible=False)
 
 demo = gr.Blocks()
 
@@ -230,7 +226,7 @@ with demo:
             gr.Markdown("### Overfit Model - Test Data")
             outputs[10].render()
 
-    generate_data_btn.click(generate_data_wrapper, inputs=data_settings, outputs=outputs, _js="reset_outputs()")
+    generate_data_btn.click(generate_data_wrapper, inputs=data_settings, outputs=outputs)
     train_models_btn.click(train_models_wrapper, inputs=data_settings + model_settings, outputs=outputs)
 
 demo.launch()
