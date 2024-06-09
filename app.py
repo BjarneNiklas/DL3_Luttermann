@@ -168,12 +168,13 @@ outputs = [
 
 def generate_data_wrapper(*args):
     noiseless_plot, noisy_plot = generate_data(*args)
+    reset_outputs(outputs)
     return [noiseless_plot, noisy_plot] + [None] * 9  # Fülle die restlichen Ausgaben mit None
 
 def train_models_wrapper(*args):
     return main(*args)
 
-def reset_outputs(event=None):
+def reset_outputs(outputs):
     for output in outputs[2:]:
         output.update(visible=False)
 
@@ -230,7 +231,7 @@ with demo:
             gr.Markdown("### Overfit Model - Test Data")
             outputs[10].render()
 
-    generate_data_btn.click(generate_data_wrapper, inputs=data_settings, outputs=outputs, _js="reset_outputs()")
+    generate_data_btn.click(generate_data_wrapper, inputs=data_settings, outputs=outputs)
     train_models_btn.click(train_models_wrapper, inputs=data_settings + model_settings, outputs=outputs)
 
 demo.launch()
