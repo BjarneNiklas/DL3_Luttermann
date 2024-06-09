@@ -53,15 +53,13 @@ def plot_data(x_train, y_train, x_test, y_test, title, show_true_function, x_min
     return fig
 
 # Plot predictions
-def plot_predictions(x, y, model, title, show_true_function, x_min, x_max, is_train):
+def plot_predictions(x_train, y_train, x_test, y_test, model, title, show_true_function, x_min, x_max):
     x_range = np.linspace(x_min, x_max, 1000)
     y_pred = model.predict(x_range).flatten()
     
     fig = go.Figure()
-    if is_train:
-        fig.add_trace(go.Scatter(x=x, y=y, mode='markers', name='Train Data', marker=dict(color='blue')))
-    else:
-        fig.add_trace(go.Scatter(x=x, y=y, mode='markers', name='Test Data', marker=dict(color='red')))
+    fig.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data', marker=dict(color='blue')))
+    fig.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data', marker=dict(color='red')))
     fig.add_trace(go.Scatter(x=x_range, y=y_pred, mode='lines', name='Prediction', line=dict(color='green')))
     if show_true_function:
         y_true = true_function(x_range)
@@ -82,20 +80,20 @@ def main(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_ov
     
     # Unnoisy model
     model_unnoisy, loss_unnoisy = train_model(x_train, y_train, epochs_unnoisy)
-    unnoisy_plot_train = plot_predictions(x_train, y_train, model_unnoisy, "Unnoisy Model - Train Data", show_true_function, x_min, x_max, True)
-    unnoisy_plot_test = plot_predictions(x_test, y_test, model_unnoisy, "Unnoisy Model - Test Data", show_true_function, x_min, x_max, False)
+    unnoisy_plot_train = plot_predictions(x_train, y_train, x_test, y_test, model_unnoisy, "Unnoisy Model - Train Data", show_true_function, x_min, x_max)
+    unnoisy_plot_test = plot_predictions(x_test, y_test, x_test, y_test, model_unnoisy, "Unnoisy Model - Test Data", show_true_function, x_min, x_max)
     loss_unnoisy_test = model_unnoisy.evaluate(x_test, y_test, verbose=0)
     
     # Best-fit model
     model_best, loss_best = train_model(x_train, y_train_noisy, epochs_best)
-    best_fit_plot_train = plot_predictions(x_train, y_train_noisy, model_best, "Best-Fit Model - Train Data", show_true_function, x_min, x_max, True)
-    best_fit_plot_test = plot_predictions(x_test, y_test_noisy, model_best, "Best-Fit Model - Test Data", show_true_function, x_min, x_max, False)
+    best_fit_plot_train = plot_predictions(x_train, y_train_noisy, x_test, y_test_noisy, model_best, "Best-Fit Model - Train Data", show_true_function, x_min, x_max)
+    best_fit_plot_test = plot_predictions(x_test, y_test_noisy, x_test, y_test_noisy, model_best, "Best-Fit Model - Test Data", show_true_function, x_min, x_max)
     loss_best_test = model_best.evaluate(x_test, y_test_noisy, verbose=0)
     
     # Overfit model
     model_overfit, loss_overfit = train_model(x_train, y_train_noisy, epochs_overfit)
-    overfit_plot_train = plot_predictions(x_train, y_train_noisy, model_overfit, "Overfit Model - Train Data", show_true_function, x_min, x_max, True)
-    overfit_plot_test = plot_predictions(x_test, y_test_noisy, model_overfit, "Overfit Model - Test Data", show_true_function, x_min, x_max, False)
+    overfit_plot_train = plot_predictions(x_train, y_train_noisy, x_test, y_test_noisy, model_overfit, "Overfit Model - Train Data", show_true_function, x_min, x_max)
+    overfit_plot_test = plot_predictions(x_test, y_test_noisy, x_test, y_test_noisy, model_overfit, "Overfit Model - Test Data", show_true_function, x_min, x_max)
     loss_overfit_test = model_overfit.evaluate(x_test, y_test_noisy, verbose=0)
     
     return (noiseless_plot, noisy_plot, 
