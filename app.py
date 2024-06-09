@@ -40,7 +40,7 @@ def train_model(x_train, y_train, epochs):
     history = model.fit(x_train, y_train, epochs=epochs, batch_size=32, verbose=0)
     return model, history.history['loss'][-1]
 
-# Plot data and predictions
+# Plot data
 def plot_data(x_train, y_train, x_test, y_test, title):
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data', marker=dict(color='blue')))
@@ -48,15 +48,11 @@ def plot_data(x_train, y_train, x_test, y_test, title):
     fig.update_layout(title=title)
     return fig
 
-def plot_predictions(model, x_train, y_train, x_test, y_test, title):
-    y_train_pred = model.predict(x_train)
-    y_test_pred = model.predict(x_test)
-    
+# Plot predictions
+def plot_predictions(x, y, y_pred, title, mode='lines'):
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data', marker=dict(color='blue')))
-    fig.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data', marker=dict(color='red')))
-    fig.add_trace(go.Scatter(x=x_train, y=y_train_pred[:, 0], mode='lines', name='Train Prediction', line=dict(color='blue')))
-    fig.add_trace(go.Scatter(x=x_test, y=y_test_pred[:, 0], mode='lines', name='Test Prediction', line=dict(color='red')))
+    fig.add_trace(go.Scatter(x=x, y=y, mode='markers', name='Data', marker=dict(color='blue')))
+    fig.add_trace(go.Scatter(x=x, y=y_pred, mode=mode, name='Prediction', line=dict(color='red')))
     fig.update_layout(title=title)
     return fig
 
@@ -72,20 +68,26 @@ def main(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_ov
     
     # Unnoisy model
     model_unnoisy, loss_unnoisy = train_model(x_train, y_train, epochs_unnoisy)
-    unnoisy_plot_train = plot_predictions(model_unnoisy, x_train, y_train, x_train, y_train, "Unnoisy Model - Train Data")
-    unnoisy_plot_test = plot_predictions(model_unnoisy, x_train, y_train, x_test, y_test, "Unnoisy Model - Test Data")
+    y_train_unnoisy_pred = model_unnoisy.predict(x_train).flatten()
+    y_test_unnoisy_pred = model_unnoisy.predict(x_test).flatten()
+    unnoisy_plot_train = plot_predictions(x_train, y_train, y_train_unnoisy_pred, "Unnoisy Model - Train Data")
+    unnoisy_plot_test = plot_predictions(x_test, y_test, y_test_unnoisy_pred, "Unnoisy Model - Test Data")
     loss_unnoisy_test = model_unnoisy.evaluate(x_test, y_test, verbose=0)
     
     # Best-fit model
     model_best, loss_best = train_model(x_train, y_train_noisy, epochs_best)
-    best_fit_plot_train = plot_predictions(model_best, x_train, y_train_noisy, x_train, y_train_noisy, "Best-Fit Model - Train Data")
-    best_fit_plot_test = plot_predictions(model_best, x_train, y_train_noisy, x_test, y_test_noisy, "Best-Fit Model - Test Data")
+    y_train_best_pred = model_best.predict(x_train).flatten()
+    y_test_best_pred = model_best.predict(x_test).flatten()
+    best_fit_plot_train = plot_predictions(x_train, y_train_noisy, y_train_best_pred, "Best-Fit Model - Train Data")
+    best_fit_plot_test = plot_predictions(x_test, y_test_noisy, y_test_best_pred, "Best-Fit Model - Test Data")
     loss_best_test = model_best.evaluate(x_test, y_test_noisy, verbose=0)
     
     # Overfit model
     model_overfit, loss_overfit = train_model(x_train, y_train_noisy, epochs_overfit)
-    overfit_plot_train = plot_predictions(model_overfit, x_train, y_train_noisy, x_train, y_train_noisy, "Overfit Model - Train Data")
-    overfit_plot_test = plot_predictions(model_overfit, x_train, y_train_noisy, x_test, y_test_noisy, "Overfit Model - Test Data")
+    y_train_overfit_pred = model_overfit.predict(x_train).flatten()
+    y_test_overfit_pred = model_overfit.predict(x_test).flatten()
+    overfit_plot_train = plot_predictions(x_train, y_train_noisy, y_train_overfit_pred, "Overfit Model - Train Data")
+    overfit_plot_test = plot_predictions(x_test, y_test_noisy, y_test_overfit_pred, "Overfit Model - Test Data")
     loss_overfit_test = model_overfit.evaluate(x_test, y_test_noisy, verbose=0)
     
     return (noiseless_plot, noisy_plot, 
@@ -156,5 +158,5 @@ with gr.Blocks() as demo:
             outputs[9].render()
         with gr.Column():
             outputs[10].render()
-    
+
 demo.launch()
