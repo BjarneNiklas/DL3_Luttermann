@@ -6,11 +6,11 @@ from tensorflow.keras.optimizers import Adam
 import plotly.graph_objects as go
 import gradio as gr
 
-# Definiere die eigentliche Funktion
+# Definieren der eigentlichen Funktion
 def original_function(x):
     return 0.5 * (x + 0.8) * (x + 1.8) * (x - 0.2) * (x - 0.3) * (x - 1.9) + 1
 
-# Generiere Datensätze
+# Generieren der Datensätze
 def generate_data(N, noise_variance, x_min, x_max):
     x = np.random.uniform(x_min, x_max, N)
     y = original_function(x)
@@ -23,7 +23,7 @@ def generate_data(N, noise_variance, x_min, x_max):
 
     return x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy
 
-# Define the neural network model
+# Definieren des NNMs
 def create_model(num_layers, neurons_per_layer):
     model = Sequential()
     model.add(Dense(neurons_per_layer, activation='relu', input_dim=1))
@@ -33,7 +33,7 @@ def create_model(num_layers, neurons_per_layer):
     model.compile(optimizer=Adam(learning_rate=0.01), loss='mean_squared_error')
     return model
 
-# Train the model
+# Trainieren des Modells
 def train_model(x_train, y_train, epochs, model):
     history = model.fit(x_train, y_train, epochs=epochs, batch_size=32, verbose=0)
     return model, history.history['loss'][-1]
@@ -41,12 +41,12 @@ def train_model(x_train, y_train, epochs, model):
 # Plot data
 def plot_data(x_train, y_train, x_test, y_test, title, show_original_function, x_min, x_max):
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data', marker=dict(color='blue')))
-    fig.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data', marker=dict(color='red')))
+    fig.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Trainingsdaten', marker=dict(color='blue')))
+    fig.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Testdaten', marker=dict(color='red')))
     if show_original_function:
         x_range = np.linspace(x_min, x_max, 1000)
         y_original = original_function(x_range)
-        fig.add_trace(go.Scatter(x=x_range, y=y_original, mode='lines', name='Funktion', line=dict(color='green')))
+        fig.add_trace(go.Scatter(x=x_range, y=y_original, mode='lines', name='y(x)', line=dict(color='green')))
     fig.update_layout(title=title)
     return fig
 
@@ -58,11 +58,11 @@ def plot_predictions(x, y, model, title, show_original_function, x_min, x_max, d
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=x, y=y, mode='markers', name=f'{data_type} Data', marker=dict(color='blue' if data_type == 'Train' else 'red')))
-    fig.add_trace(go.Scatter(x=x, y=y_pred_points, mode='markers', name='Prediction Points', marker=dict(color='green')))
-    fig.add_trace(go.Scatter(x=x_range, y=y_pred, mode='lines', name='Prediction Line', line=dict(color='green')))
+    fig.add_trace(go.Scatter(x=x, y=y_pred_points, mode='markers', name='Predicted Points (Datenvorhersage)', marker=dict(color='green')))
+    fig.add_trace(go.Scatter(x=x_range, y=y_pred, mode='lines', name='Predicted Line (Hilfslinie)', line=dict(color='green')))
     if show_original_function:
         y_original = original_function(x_range)
-        fig.add_trace(go.Scatter(x=x_range, y=y_original, mode='lines', name='Funktion', line=dict(color='orange')))
+        fig.add_trace(go.Scatter(x=x_range, y=y_original, mode='lines', name='y(x)', line=dict(color='orange')))
     fig.update_layout(title=title)
     return fig
 
@@ -72,30 +72,30 @@ def main(N, noise_variance, x_min, x_max, num_layers, neurons_per_layer, epochs_
     x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy = generate_data(N, noise_variance, x_min, x_max)
 
     # Noiseless data plot
-    noiseless_plot = plot_data(x_train, y_train, x_test, y_test, "Noiseless Datasets", show_original_function, x_min, x_max)
+    noiseless_plot = plot_data(x_train, y_train, x_test, y_test, "Datensätze ohne Rauschen", show_original_function, x_min, x_max)
 
     # Noisy data plot
-    noisy_plot = plot_data(x_train, y_train_noisy, x_test, y_test_noisy, "Noisy Datasets", show_original_function, x_min, x_max)
+    noisy_plot = plot_data(x_train, y_train_noisy, x_test, y_test_noisy, "Datensätze mit Rauschen", show_original_function, x_min, x_max)
 
     # Unnoisy model
     model_unnoisy = create_model(num_layers, neurons_per_layer)
     model_unnoisy, loss_unnoisy_train = train_model(x_train, y_train, epochs_unnoisy, model_unnoisy)
-    unnoisy_plot_train = plot_predictions(x_train, y_train, model_unnoisy, "Unnoisy Model - Train Data", show_original_function, x_min, x_max, "Train")
-    unnoisy_plot_test = plot_predictions(x_test, y_test, model_unnoisy, "Unnoisy Model - Test Data", show_original_function, x_min, x_max, "Test")
+    unnoisy_plot_train = plot_predictions(x_train, y_train, model_unnoisy, "Modell ohne Rauschen - Trainingsdaten", show_original_function, x_min, x_max, "Train")
+    unnoisy_plot_test = plot_predictions(x_test, y_test, model_unnoisy, "Modell ohne Rauschen - Testdaten", show_original_function, x_min, x_max, "Test")
     loss_unnoisy_test = model_unnoisy.evaluate(x_test, y_test, verbose=0)
 
     # Best-fit model
     model_best_fit = create_model(num_layers, neurons_per_layer)
     model_best_fit, loss_best_fit_train = train_model(x_train, y_train_noisy, epochs_best_fit, model_best_fit)
-    best_fit_plot_train = plot_predictions(x_train, y_train_noisy, model_best_fit, "Best-Fit Model - Train Data", show_original_function, x_min, x_max, "Train")
-    best_fit_plot_test = plot_predictions(x_test, y_test_noisy, model_best_fit, "Best-Fit Model - Test Data", show_original_function, x_min, x_max, "Test")
+    best_fit_plot_train = plot_predictions(x_train, y_train_noisy, model_best_fit, "Best-Fit-Modell - Trainingsdaten", show_original_function, x_min, x_max, "Train")
+    best_fit_plot_test = plot_predictions(x_test, y_test_noisy, model_best_fit, "Best-Fit-Modell - Testdaten", show_original_function, x_min, x_max, "Test")
     loss_best_fit_test = model_best_fit.evaluate(x_test, y_test_noisy, verbose=0)
 
     # Overfit model
     model_overfit = create_model(num_layers, neurons_per_layer)
     model_overfit, loss_overfit_train = train_model(x_train, y_train_noisy, epochs_overfit, model_overfit)
-    overfit_plot_train = plot_predictions(x_train, y_train_noisy, model_overfit, "Overfit Model - Train Data", show_original_function, x_min, x_max, "Train")
-    overfit_plot_test = plot_predictions(x_test, y_test_noisy, model_overfit, "Overfit Model - Test Data", show_original_function, x_min, x_max, "Test")
+    overfit_plot_train = plot_predictions(x_train, y_train_noisy, model_overfit, "Overfit-Modell - Trainingsdaten", show_original_function, x_min, x_max, "Train")
+    overfit_plot_test = plot_predictions(x_test, y_test_noisy, model_overfit, "Overfit-Modell - Testdaten", show_original_function, x_min, x_max, "Test")
     loss_overfit_test = model_overfit.evaluate(x_test, y_test_noisy, verbose=0)
 
     return (noiseless_plot, noisy_plot,
@@ -115,7 +115,7 @@ Three models are trained: one on the clean data (no noise), one on the noisy dat
 
 The interactive Gradio interface allows users to adjust various parameters, such as the number of data points, noise variance, model architecture (number of layers and neurons per layer), and training epochs. This flexibility enables users to explore the impact of different settings on the regression task and gain a deeper understanding of the concepts involved.
 
-## Technical Documentation
+## Technische Dokumentation
 
 The solution is implemented using Python, TensorFlow for building and training the neural network models, and Plotly for interactive data visualization. The Gradio library is used to create the user interface and enable interactive parameter adjustments.
 
