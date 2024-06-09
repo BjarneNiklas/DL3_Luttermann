@@ -184,10 +184,9 @@ with demo:
     with gr.Row():
         with gr.Column():
             outputs[0].render()
+            outputs[4].render()
         with gr.Column():
             outputs[1].render()
-    with gr.Row():
-        outputs[4].render()
     with gr.Row():
             outputs[3].render()
     with gr.Row():
