@@ -54,15 +54,22 @@ def plot_data(x_train, y_train, x_test, y_test, title, show_true_function, x_min
 
 # Plot predictions
 def plot_predictions(x, y, model, title, show_true_function, x_min, x_max, data_type):
-    x_range = np.linspace(x_min, x_max, 1000)
-    y_pred = model.predict(x_range).flatten()
-    
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=x, y=y, mode='markers', name=f'{data_type} Data', marker=dict(color='blue' if data_type == 'Train' else 'red')))
-    fig.add_trace(go.Scatter(x=x_range, y=y_pred, mode='lines', name='Prediction', line=dict(color='green')))
+    
+    # Predict on the same data points
+    y_pred = model.predict(x).flatten()
+    fig.add_trace(go.Scatter(x=x, y=y_pred, mode='markers', name='Predictions', marker=dict(color='green')))
+    
+    # Plot the prediction line
+    x_range = np.linspace(x.min(), x.max(), 1000)
+    y_pred_line = model.predict(x_range.reshape(-1, 1)).flatten()
+    fig.add_trace(go.Scatter(x=x_range, y=y_pred_line, mode='lines', name='Prediction Line', line=dict(color='green')))
+    
     if show_true_function:
         y_true = true_function(x_range)
         fig.add_trace(go.Scatter(x=x_range, y=y_true, mode='lines', name='True Function', line=dict(color='orange')))
+    
     fig.update_layout(title=title)
     return fig
 
