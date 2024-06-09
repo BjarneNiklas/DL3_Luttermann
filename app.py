@@ -224,23 +224,8 @@ with demo:
                 Gradio: Zur Anzeige der UI-Elemente\n
                 TensorFlow Keras: Mit dem ML-Framework wurde die Architektur des neuronalen Netzes definiert (u. a. Adam Optimization Algorithm, Activation Function, Neurons per Layer)\n
                 Plotly: Zur Visualisierung der Diagramme\n\n
-                Das Besondere an dieser Lösung ist die einfache Benutzerfreundlichkeit aufgrund des gewählten UI-Frameworks Gradio. Zudem ist sie einfach verständlich durch die populäre Python-Programmiersprache und dank der verschiedenen Bibliotheken beliebig erweiter- und wartbar.\n
-                Denn die Codestruktur ist modular aufgebaut mit separaten kleineren Funktionen für jede Aufgabe. 
-            """)
-        with gr.Column():
-            gr.Markdown("""
-                # Fachliche Dokumentation
-        
-                ## Ansatz:
-                Es soll ein neuronales Netzwerk für eine Regressionsproblematik trainiert werden. Verschiedene Szenarien können damit simuliert werden.\n
-                Zunächst wird die vorgegebene Ground-Truth-Funktion definiert. Von dieser können Datenpunkte unterschiedlicher Rauschlevel generiert werden.\n
-                Im Rahmen der Aufgabe waren die unterschiedlichen Parameter (Möglichkeiten zum Trainieren und Anpassen der Modelle) überwiegend vorgegeben (siehe Aufgabenstellung).\n
-                Die 100 Datenpunkte werden in Trainings- und Testdatensätze aufgeteilt (50:50). Drei Modelle werden trainiert: ein Modell auf den rauschfreien Daten,\n 
-                ein Modell auf den verrauschten Daten zur bestmöglichen Anpassung (Best-Fit-Modell) und ein Modell mit einer erhöhten Anzahl von Trainings-Epochen, um Overfitting zu beobachten (Overfit-Modell).\n\n
-
-                Durch den Vergleich der MSE der Trainings- und Testdaten kann Overfitting beobachtet werden und geprüft werden, welches Modell am besten generalisiert.\n
-                Die Gradio-UI ermöglicht es den Benutzern, verschiedene Parameter anzupassen, wie beispielsweise die Anzahl der Datenpunkte, Noise Variance und Anzahl der Trainings-Epochen.\n
-
+                Das Besondere an dieser Lösung ist die einfache Benutzerfreundlichkeit aufgrund des gewählten UI-Frameworks Gradio. Zudem ist sie einfach verständlich durch die populäre Python-Programmiersprache und dank der verschiedenen Bibliotheken beliebig erweiter- und wartbar. Denn die Codestruktur ist modular aufgebaut mit separaten kleineren Funktionen für jede Aufgabe. 
+            
                 ## Logik:
                 Die Logik der Implementierung kann wie folgt unterteilt werden: \n
                 1. Generieren der Datensätze (mithilfe der Ground-Truth-Funktion und Gaussian Noise)\n
@@ -249,14 +234,27 @@ with demo:
                 4. Trainieren der drei Modelle \n
                 5. Berechnen der Train und Test Losses (MSE) für die jeweiligen Modelle
                 6. Setup der Gradio-UI mit den Widgets (Eingabedaten) und Output (Plots und Text)
+            """)
+        with gr.Column():
+            gr.Markdown("""
+                # Fachliche Dokumentation
+        
+                Es soll ein neuronales Netzwerk für eine Regressionsproblematik trainiert werden. Verschiedene Szenarien können damit simuliert werden.\n
+                Zunächst wird die vorgegebene Ground-Truth-Funktion definiert. Von dieser können Datenpunkte unterschiedlicher Rauschlevel generiert werden.\n
+                Im Rahmen der Aufgabe waren die unterschiedlichen Parameter (Möglichkeiten zum Trainieren und Anpassen der Modelle) überwiegend vorgegeben (siehe Aufgabenstellung).\n
+                Die 100 Datenpunkte werden in Trainings- und Testdatensätze aufgeteilt (50:50). Drei Modelle werden trainiert: ein Modell auf den rauschfreien Daten,\n 
+                ein Modell auf den verrauschten Daten zur bestmöglichen Anpassung (Best-Fit-Modell) und ein Modell mit einer erhöhten Anzahl von Trainings-Epochen, um Overfitting zu beobachten (Overfit-Modell).\n\n
+
+                Durch den Vergleich der MSE der Trainings- und Testdaten kann Overfitting beobachtet werden und geprüft werden, welches Modell am besten generalisiert.\n
+                Die Gradio-UI ermöglicht es den Benutzern, verschiedene Parameter anzupassen, wie beispielsweise die Anzahl der Datenpunkte, Noise Variance und Anzahl der Trainings-Epochen.\n
                     
                 ## Quellen und hilfreiche Links:
-                - GeeksforGeeks (2021): Scatter plot in Plotly using graph_objects class. Online: https://www.geeksforgeeks.org/scatter-plot-in-plotly-using-graph_objects-class/ \n
-                - GeeksforGeeks (2022): Adam Optimizer in Tensorflow. Online: https://www.geeksforgeeks.org/adam-optimizer-in-tensorflow/ \n
+                – GeeksforGeeks (2021): Scatter plot in Plotly using graph_objects class. Online: https://www.geeksforgeeks.org/scatter-plot-in-plotly-using-graph_objects-class/ \n
+                – GeeksforGeeks (2022): Adam Optimizer in Tensorflow. Online: https://www.geeksforgeeks.org/adam-optimizer-in-tensorflow/ \n
                 – Hugging Face (o. A.): Introduction to Gradio Blocks. Online: https://huggingface.co/learn/nlp-course/en/chapter9/7 \n
-                - NumPy (o. A.): numpy.random.normal. Online: https://numpy.org/doc/stable/reference/random/generated/numpy.random.normal.html \n
-                - TensorFlow (o. A.-a): Basic regression: Predict fuel efficiency. Online: https://www.tensorflow.org/tutorials/keras/regression \n
-                - TensorFlow (o. A.-b): tf.keras.layers.GaussianNoise. Online: https://www.tensorflow.org/api_docs/python/tf/keras/layers/GaussianNoise 
+                – NumPy (o. A.): numpy.random.normal. Online: https://numpy.org/doc/stable/reference/random/generated/numpy.random.normal.html \n
+                – TensorFlow (o. A.-a): Basic regression: Predict fuel efficiency. Online: https://www.tensorflow.org/tutorials/keras/regression \n
+                – TensorFlow (o. A.-b): tf.keras.layers.GaussianNoise. Online: https://www.tensorflow.org/api_docs/python/tf/keras/layers/GaussianNoise 
             """)
     with gr.Row():
         with gr.Column():
