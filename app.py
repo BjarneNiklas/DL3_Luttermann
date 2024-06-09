@@ -43,7 +43,7 @@ def plot_data(x_train, y_train, x_test, y_test, title, show_true_function, show_
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data', marker=dict(color='blue')))
     fig.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data', marker=dict(color='red')))
-    if show_true_function or show_prediction_line:
+    if show_true_function or (show_prediction_line and model is not None):
         x_range = np.linspace(x_min, x_max, 1000)
         y_true = true_function(x_range)
         if show_true_function:
