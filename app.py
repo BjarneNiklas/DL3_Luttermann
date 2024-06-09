@@ -187,11 +187,9 @@ with demo:
         with gr.Column():
             outputs[1].render()
     with gr.Row():
-        with gr.Column():
-            outputs[2].render()
+        outputs[4].render()
+    with gr.Row():
             outputs[3].render()
-        with gr.Column():
-            outputs[4].render()
     with gr.Row():
         with gr.Column():
             outputs[5].render()
