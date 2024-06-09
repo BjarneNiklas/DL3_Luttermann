@@ -1,113 +1,108 @@
 import numpy as np
-import tensorflow as tf
 import plotly.graph_objects as go
 import gradio as gr
-from plotly.subplots import make_subplots
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.optimizers import Adam
 
-# Function to generate data
-def generate_data(N=100, noise_variance=0.05):
-    np.random.seed(42)  # For reproducibility
-    x = np.random.uniform(-2, 2, N)
-    y = 0.5 * (x + 0.8) * (x + 1.8) * (x - 0.2) * (x - 0.3) * (x - 1.9) + 1
-    y_noisy = y + np.random.normal(0, np.sqrt(noise_variance), N)
+# Define the true function
+def true_function(x):
+    return 0.5 * (x + 0.8) * (x + 1.8) * (x - 0.2) * (x - 0.3) * (x - 1.9) + 1
+
+# Generate datasets
+def generate_data(N, noise_variance, x_min, x_max):
+    x = np.random.uniform(x_min, x_max, N)
+    y = true_function(x)
+    x_train, x_test = x[:N//2], x[N//2:]
+    y_train, y_test = y[:N//2], y[N//2:]
+
+    noise = np.random.normal(0, noise_variance**0.5, y_train.shape)
+    y_train_noisy = y_train + noise
+    y_test_noisy = y_test + noise
     
-    indices = np.random.permutation(N)
-    train_idx, test_idx = indices[:N//2], indices[N//2:]
-    data = {
-        "train": {"x": x[train_idx], "y": y[train_idx], "y_noisy": y_noisy[train_idx]},
-        "test": {"x": x[test_idx], "y": y[test_idx], "y_noisy": y_noisy[test_idx]}
-    }
-    return data
+    return x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy
 
-# Function to create the model
-def create_ffnn():
-    model = tf.keras.Sequential([
-        tf.keras.layers.Dense(100, activation='relu', input_shape=(1,)),
-        tf.keras.layers.Dense(100, activation='relu'),
-        tf.keras.layers.Dense(1)  # Linear activation by default
+# Define the neural network model
+def create_model():
+    model = Sequential([
+        Dense(100, activation='relu', input_dim=1),
+        Dense(100, activation='relu'),
+        Dense(1, activation='linear')
     ])
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), loss='mse')
+    model.compile(optimizer=Adam(learning_rate=0.01), loss='mean_squared_error')
     return model
 
-# Function to train models and return predictions
-def train_models(data, epochs_best=200, epochs_overfit=500):
-    model_clean = create_ffnn()
-    model_clean.fit(data["train"]["x"], data["train"]["y"], epochs=100, batch_size=32, verbose=0)
-    
-    model_best = create_ffnn()
-    model_best.fit(data["train"]["x"], data["train"]["y_noisy"], epochs=epochs_best, batch_size=32, verbose=0)
-    
-    model_overfit = create_ffnn()
-    model_overfit.fit(data["train"]["x"], data["train"]["y_noisy"], epochs=epochs_overfit, batch_size=32, verbose=0)
-    
-    results = {
-        "clean": {"train": model_clean.predict(data["train"]["x"]), "test": model_clean.predict(data["test"]["x"])},
-        "best": {"train": model_best.predict(data["train"]["x"]), "test": model_best.predict(data["test"]["x"])},
-        "overfit": {"train": model_overfit.predict(data["train"]["x"]), "test": model_overfit.predict(data["test"]["x"])},
-    }
-    
-    losses = {
-        "clean_train": model_clean.evaluate(data["train"]["x"], data["train"]["y"], verbose=0),
-        "clean_test": model_clean.evaluate(data["test"]["x"], data["test"]["y"], verbose=0),
-        "best_train": model_best.evaluate(data["train"]["x"], data["train"]["y_noisy"], verbose=0),
-        "best_test": model_best.evaluate(data["test"]["x"], data["test"]["y_noisy"], verbose=0),
-        "overfit_train": model_overfit.evaluate(data["train"]["x"], data["train"]["y_noisy"], verbose=0),
-        "overfit_test": model_overfit.evaluate(data["test"]["x"], data["test"]["y_noisy"], verbose=0),
-    }
-    
-    return results, losses
+# Train the model
+def train_model(x_train, y_train, epochs):
+    model = create_model()
+    model.fit(x_train, y_train, epochs=epochs, batch_size=32, verbose=0)
+    return model
 
-# Function to plot the results
-def plot_results(data, results):
-    fig = make_subplots(rows=4, cols=2, subplot_titles=[
-        "Clean Data (Train/Test)", "Noisy Data (Train/Test)",
-        "Model Prediction (Clean, Train)", "Model Prediction (Clean, Test)",
-        "Model Prediction (Best-Fit, Train)", "Model Prediction (Best-Fit, Test)",
-        "Model Prediction (Overfit, Train)", "Model Prediction (Overfit, Test)"
-    ])
-    
-    fig.add_trace(go.Scatter(x=data["train"]["x"], y=data["train"]["y"], mode='markers', name='Train (Clean)'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=data["test"]["x"], y=data["test"]["y"], mode='markers', name='Test (Clean)'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=data["train"]["x"], y=data["train"]["y_noisy"], mode='markers', name='Train (Noisy)'), row=1, col=2)
-    fig.add_trace(go.Scatter(x=data["test"]["x"], y=data["test"]["y_noisy"], mode='markers', name='Test (Noisy)'), row=1, col=2)
-    
-    fig.add_trace(go.Scatter(x=data["train"]["x"], y=results["clean"]["train"].flatten(), mode='markers', name='Pred (Clean, Train)'), row=2, col=1)
-    fig.add_trace(go.Scatter(x=data["test"]["x"], y=results["clean"]["test"].flatten(), mode='markers', name='Pred (Clean, Test)'), row=2, col=2)
-    
-    fig.add_trace(go.Scatter(x=data["train"]["x"], y=results["best"]["train"].flatten(), mode='markers', name='Pred (Best-Fit, Train)'), row=3, col=1)
-    fig.add_trace(go.Scatter(x=data["test"]["x"], y=results["best"]["test"].flatten(), mode='markers', name='Pred (Best-Fit, Test)'), row=3, col=2)
-    
-    fig.add_trace(go.Scatter(x=data["train"]["x"], y=results["overfit"]["train"].flatten(), mode='markers', name='Pred (Overfit, Train)'), row=4, col=1)
-    fig.add_trace(go.Scatter(x=data["test"]["x"], y=results["overfit"]["test"].flatten(), mode='markers', name='Pred (Overfit, Test)'), row=4, col=2)
-    
-    fig.update_layout(height=1200, width=1200, title_text="FFNN Regression Results")
+# Plot data and predictions
+def plot_data(x_train, y_train, x_test, y_test, title):
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data'))
+    fig.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data'))
+    fig.update_layout(title=title)
     return fig
 
-# Gradio interface
-def interface(epochs_best=200, epochs_overfit=500):
-    data = generate_data()
-    results, losses = train_models(data, epochs_best, epochs_overfit)
-    fig = plot_results(data, results)
+def plot_predictions(model, x_train, y_train, x_test, y_test, title):
+    y_train_pred = model.predict(x_train)
+    y_test_pred = model.predict(x_test)
     
-    loss_text = f"""
-    Clean Model: Train Loss = {losses['clean_train']:.4f}, Test Loss = {losses['clean_test']:.4f}\n
-    Best-Fit Model: Train Loss = {losses['best_train']:.4f}, Test Loss = {losses['best_test']:.4f}\n
-    Overfit Model: Train Loss = {losses['overfit_train']:.4f}, Test Loss = {losses['overfit_test']:.4f}
-    """
-    
-    return fig, loss_text
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data'))
+    fig.add_trace(go.Scatter(x=x_train, y=y_train_pred[:, 0], mode='markers', name='Train Prediction'))
+    fig.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data'))
+    fig.add_trace(go.Scatter(x=x_test, y=y_test_pred[:, 0], mode='markers', name='Test Prediction'))
+    fig.update_layout(title=title)
+    return fig
 
-# Gradio app
-gr.Interface(
-    fn=interface,
+def main(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_overfit):
+    # Generate data
+    x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy = generate_data(N, noise_variance, x_min, x_max)
+    
+    # Unnoisy model
+    model_unnoisy = train_model(x_train, y_train, epochs_unnoisy)
+    unnoisy_plot_train = plot_predictions(model_unnoisy, x_train, y_train, x_train, y_train, "Unnoisy Model - Train Data")
+    unnoisy_plot_test = plot_predictions(model_unnoisy, x_train, y_train, x_test, y_test, "Unnoisy Model - Test Data")
+    
+    # Best-fit model
+    model_best = train_model(x_train, y_train_noisy, epochs_best)
+    best_fit_plot_train = plot_predictions(model_best, x_train, y_train_noisy, x_train, y_train_noisy, "Best-Fit Model - Train Data")
+    best_fit_plot_test = plot_predictions(model_best, x_train, y_train_noisy, x_test, y_test_noisy, "Best-Fit Model - Test Data")
+    
+    # Overfit model
+    model_overfit = train_model(x_train, y_train_noisy, epochs_overfit)
+    overfit_plot_train = plot_predictions(model_overfit, x_train, y_train_noisy, x_train, y_train_noisy, "Overfit Model - Train Data")
+    overfit_plot_test = plot_predictions(model_overfit, x_train, y_train_noisy, x_test, y_test_noisy, "Overfit Model - Test Data")
+    
+    # Data plots
+    noiseless_plot = plot_data(x_train, y_train, x_test, y_test, "Noiseless Datasets")
+    noisy_plot = plot_data(x_train, y_train_noisy, x_test, y_test_noisy, "Noisy Datasets")
+    
+    return noiseless_plot, noisy_plot, unnoisy_plot_train, unnoisy_plot_test, best_fit_plot_train, best_fit_plot_test, overfit_plot_train, overfit_plot_test
+
+# Gradio Interface
+interface = gr.Interface(
+    fn=main,
     inputs=[
-        gr.Slider(50, 500, value=200, step=10, label="Epochs for Best-Fit Model"),
-        gr.Slider(50, 1000, value=500, step=10, label="Epochs for Overfit Model")
+        gr.Slider(50, 200, step=1, value=100, label="Data Points (N)"),
+        gr.Slider(0.01, 0.1, step=0.01, value=0.05, label="Noise Variance (V)"),
+        gr.Slider(-3, -1, step=0.1, value=-2.0, label="X Min"),
+        gr.Slider(1, 3, step=0.1, value=2.0, label="X Max"),
+        gr.Slider(50, 200, step=1, value=100, label="Epochs for Unnoisy Model"),
+        gr.Slider(100, 300, step=1, value=200, label="Epochs for Best-Fit Model"),
+        gr.Slider(300, 600, step=1, value=500, label="Epochs for Overfit Model")
     ],
     outputs=[
-        gr.Plot(label="FFNN Regression Results"),
-        gr.Textbox(label="Loss Values")
+        gr.Plot(), gr.Plot(),
+        gr.Plot(), gr.Plot(),
+        gr.Plot(), gr.Plot(),
+        gr.Plot(), gr.Plot()
     ],
-    title="FFNN Regression with Plotly and Gradio",
-    description="Train and visualize FFNN models on noisy and clean data."
-).launch()
+    layout="horizontal"
+)
+
+interface.launch()
