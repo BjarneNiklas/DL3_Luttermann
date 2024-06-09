@@ -43,8 +43,8 @@ def train_model(x_train, y_train, epochs):
 # Plot data and predictions
 def plot_data(x_train, y_train, x_test, y_test, title):
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data'))
-    fig.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data'))
+    fig.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data', marker=dict(color='blue')))
+    fig.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data', marker=dict(color='red')))
     fig.update_layout(title=title)
     return fig
 
@@ -53,16 +53,22 @@ def plot_predictions(model, x_train, y_train, x_test, y_test, title):
     y_test_pred = model.predict(x_test)
     
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data'))
-    fig.add_trace(go.Scatter(x=x_train, y=y_train_pred[:, 0], mode='lines', name='Train Prediction'))
-    fig.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data'))
-    fig.add_trace(go.Scatter(x=x_test, y=y_test_pred[:, 0], mode='lines', name='Test Prediction'))
+    fig.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data', marker=dict(color='blue')))
+    fig.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data', marker=dict(color='red')))
+    fig.add_trace(go.Scatter(x=x_train, y=y_train_pred[:, 0], mode='lines', name='Train Prediction', line=dict(color='blue')))
+    fig.add_trace(go.Scatter(x=x_test, y=y_test_pred[:, 0], mode='lines', name='Test Prediction', line=dict(color='red')))
     fig.update_layout(title=title)
     return fig
 
 def main(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_overfit):
     # Generate data
     x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy = generate_data(N, noise_variance, x_min, x_max)
+    
+    # Noiseless data plot
+    noiseless_plot = plot_data(x_train, y_train, x_test, y_test, "Noiseless Datasets")
+    
+    # Noisy data plot
+    noisy_plot = plot_data(x_train, y_train_noisy, x_test, y_test_noisy, "Noisy Datasets")
     
     # Unnoisy model
     model_unnoisy = train_model(x_train, y_train, epochs_unnoisy)
@@ -79,11 +85,10 @@ def main(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_ov
     overfit_plot_train = plot_predictions(model_overfit, x_train, y_train_noisy, x_train, y_train_noisy, "Overfit Model - Train Data")
     overfit_plot_test = plot_predictions(model_overfit, x_train, y_train_noisy, x_test, y_test_noisy, "Overfit Model - Test Data")
     
-    # Data plots
-    noiseless_plot = plot_data(x_train, y_train, x_test, y_test, "Noiseless Datasets")
-    noisy_plot = plot_data(x_train, y_train_noisy, x_test, y_test_noisy, "Noisy Datasets")
-    
-    return noiseless_plot, noisy_plot, unnoisy_plot_train, unnoisy_plot_test, best_fit_plot_train, best_fit_plot_test, overfit_plot_train, overfit_plot_test
+    return (noiseless_plot, noisy_plot, 
+            unnoisy_plot_train, unnoisy_plot_test, 
+            best_fit_plot_train, best_fit_plot_test, 
+            overfit_plot_train, overfit_plot_test)
 
 # Gradio Interface
 inputs = [
@@ -108,12 +113,42 @@ outputs = [
 ]
 
 # Define the interface
-interface = gr.Interface(
-    fn=main, 
-    inputs=inputs, 
-    outputs=outputs,
-    title="Feed-Forward Neural Network Regression",
-    description="Regression learning using a Feed-Forward Neural Network (FFNN)."
-)
+with gr.Blocks() as demo:
+    with gr.Column():
+        gr.Markdown("## Regression with Feed-Forward Neural Network")
+        
+        with gr.Row():
+            with gr.Column():
+                inputs[0].render()
+                inputs[1].render()
+                inputs[2].render()
+                inputs[3].render()
+                inputs[4].render()
+                inputs[5].render()
+                inputs[6].render()
 
-interface.launch()
+        with gr.Row():
+            with gr.Column():
+                outputs[0].render()
+            with gr.Column():
+                outputs[1].render()
+        
+        with gr.Row():
+            with gr.Column():
+                outputs[2].render()
+            with gr.Column():
+                outputs[3].render()
+        
+        with gr.Row():
+            with gr.Column():
+                outputs[4].render()
+            with gr.Column():
+                outputs[5].render()
+        
+        with gr.Row():
+            with gr.Column():
+                outputs[6].render()
+            with gr.Column():
+                outputs[7].render()
+        
+demo.launch()
