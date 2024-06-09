@@ -191,25 +191,25 @@ with demo:
         with gr.Column():
             outputs[2].render()
         with gr.Column():
-            outputs[3].render()
-        with gr.Column():
             outputs[4].render()
+    with gr.Row():
+        outputs[3].render()
 
     with gr.Row():
         with gr.Column():
             outputs[5].render()
         with gr.Column():
-            outputs[6].render()
-        with gr.Column():
             outputs[7].render()
-
+    with gr.Row():
+        outputs[6].render()
+    
     with gr.Row():
         with gr.Column():
             outputs[8].render()
         with gr.Column():
-            outputs[9].render()
-        with gr.Column():
             outputs[10].render()
+    with gr.Row():
+        outputs[9].render()
     inputs[9].change(fn=update_true_function, inputs=inputs, outputs=[outputs[0], outputs[1], outputs[2], outputs[4], outputs[5], outputs[7], outputs[8], outputs[10]])
 
 demo.launch()
