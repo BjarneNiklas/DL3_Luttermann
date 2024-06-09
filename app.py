@@ -160,7 +160,7 @@ def update_original_function(show_original_function):
     epochs_overfit = inputs[8].value
     return main(N, noise_variance, x_min, x_max, num_layers, neurons_per_layer, epochs_unnoisy, epochs_best_fit, epochs_overfit, show_original_function)
 
-demo = gr.Blocks()
+demo = gr.Blocks(css="footer{display:none !important}")
 
 with demo:
     gr.Markdown("## Regression mit FFNN")
