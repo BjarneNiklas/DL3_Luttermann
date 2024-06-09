@@ -53,7 +53,7 @@ def plot_data(x_train, y_train, x_test, y_test, title, show_true_function, x_min
     return fig
 
 # Plot predictions
-def plot_predictions(x, y, model, title, show_true_function, x_min, x_max, is_train, data_noise=False):
+def plot_predictions(x, y, model, title, show_true_function, x_min, x_max, is_train):
     x_range = np.linspace(x_min, x_max, 1000)
     y_pred = model.predict(x_range).flatten()
     
@@ -62,16 +62,14 @@ def plot_predictions(x, y, model, title, show_true_function, x_min, x_max, is_tr
         fig.add_trace(go.Scatter(x=x, y=y, mode='markers', name='Train Data', marker=dict(color='blue')))
     else:
         fig.add_trace(go.Scatter(x=x, y=y, mode='markers', name='Test Data', marker=dict(color='red')))
-    
     fig.add_trace(go.Scatter(x=x_range, y=y_pred, mode='lines', name='Prediction', line=dict(color='green')))
-    
     if show_true_function:
         y_true = true_function(x_range)
         fig.add_trace(go.Scatter(x=x_range, y=y_true, mode='lines', name='True Function', line=dict(color='orange')))
-    
     fig.update_layout(title=title)
     return fig
 
+# Main function to handle training and plotting
 def main(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_overfit, show_true_function):
     # Generate data
     x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy = generate_data(N, noise_variance, x_min, x_max)
@@ -84,20 +82,20 @@ def main(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_ov
     
     # Unnoisy model
     model_unnoisy, loss_unnoisy = train_model(x_train, y_train, epochs_unnoisy)
-    unnoisy_plot_train = plot_predictions(x_train, y_train, model_unnoisy, "Unnoisy Model - Train Data", show_true_function, x_min, x_max, True, data_noise=False)
-    unnoisy_plot_test = plot_predictions(x_test, y_test, model_unnoisy, "Unnoisy Model - Test Data", show_true_function, x_min, x_max, False, data_noise=False)
+    unnoisy_plot_train = plot_predictions(x_train, y_train, model_unnoisy, "Unnoisy Model - Train Data", show_true_function, x_min, x_max, True)
+    unnoisy_plot_test = plot_predictions(x_test, y_test, model_unnoisy, "Unnoisy Model - Test Data", show_true_function, x_min, x_max, False)
     loss_unnoisy_test = model_unnoisy.evaluate(x_test, y_test, verbose=0)
     
     # Best-fit model
     model_best, loss_best = train_model(x_train, y_train_noisy, epochs_best)
-    best_fit_plot_train = plot_predictions(x_train, y_train_noisy, model_best, "Best-Fit Model - Train Data", show_true_function, x_min, x_max, True, data_noise=True)
-    best_fit_plot_test = plot_predictions(x_test, y_test_noisy, model_best, "Best-Fit Model - Test Data", show_true_function, x_min, x_max, False, data_noise=True)
+    best_fit_plot_train = plot_predictions(x_train, y_train_noisy, model_best, "Best-Fit Model - Train Data", show_true_function, x_min, x_max, True)
+    best_fit_plot_test = plot_predictions(x_test, y_test_noisy, model_best, "Best-Fit Model - Test Data", show_true_function, x_min, x_max, False)
     loss_best_test = model_best.evaluate(x_test, y_test_noisy, verbose=0)
     
     # Overfit model
     model_overfit, loss_overfit = train_model(x_train, y_train_noisy, epochs_overfit)
-    overfit_plot_train = plot_predictions(x_train, y_train_noisy, model_overfit, "Overfit Model - Train Data", show_true_function, x_min, x_max, True, data_noise=True)
-    overfit_plot_test = plot_predictions(x_test, y_test_noisy, model_overfit, "Overfit Model - Test Data", show_true_function, x_min, x_max, False, data_noise=True)
+    overfit_plot_train = plot_predictions(x_train, y_train_noisy, model_overfit, "Overfit Model - Train Data", show_true_function, x_min, x_max, True)
+    overfit_plot_test = plot_predictions(x_test, y_test_noisy, model_overfit, "Overfit Model - Test Data", show_true_function, x_min, x_max, False)
     loss_overfit_test = model_overfit.evaluate(x_test, y_test_noisy, verbose=0)
     
     return (noiseless_plot, noisy_plot, 
@@ -134,15 +132,4 @@ outputs = [
 def wrapper(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_overfit, show_true_function):
     return main(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_overfit, show_true_function)
 
-def update_true_function(show_true_function):
-    N = inputs[0].value
-    noise_variance = inputs[1].value
-    x_min = inputs[2].value
-    x_max = inputs[3].value
-    epochs_unnoisy = inputs[4].value
-    epochs_best = inputs[5].value
-    epochs_overfit = inputs[6].value
-    return main(N, noise_variance, x_min, x_max, epochs_unnoisy, epochs_best, epochs_overfit, show_true_function)
-
-# Launch Gradio interface
-gr.Interface(fn=wrapper, inputs=inputs, outputs=outputs, live=False).launch()
+gr.Interface(wrapper, inputs, outputs, title="Neural Network Training and Overfitting Visualization").launch()
