@@ -106,17 +106,17 @@ def plot_results(N, x_min, x_max, epochs_best_fit, epochs_over_fit):
     return fig
 
 # Gradio Interface
-data_settings = gr.Group([
+data_settings = [
     gr.Slider(1, 200, value=100, step=1, label="Number of Data Points"),
     gr.Slider(-3, 3, value=-2, label="X Min"),
     gr.Slider(-3, 3, value=2, label="X Max")
-])
+]
 
-model_settings = gr.Group([
+model_settings = [
     gr.Slider(1, 1000, value=200, step=1, label="Epochs (Best-Fit)"),
     gr.Slider(1, 2000, value=500, step=1, label="Epochs (Over-Fit)")
-])
+]
 
-interface = gr.Interface(fn=plot_results, inputs=[data_settings, model_settings], outputs=gr.Plot(), title="Regression mit FFNN und TensorFlow.js")
+interface = gr.Interface(fn=plot_results, inputs=data_settings + model_settings, outputs=gr.Plot(), title="Regression mit FFNN und TensorFlow.js")
 
 interface.launch()
