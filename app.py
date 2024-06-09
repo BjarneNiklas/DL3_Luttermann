@@ -6,14 +6,14 @@ from tensorflow.keras.optimizers import Adam
 import plotly.graph_objects as go
 import gradio as gr
 
-# Define the true function
-def true_function(x):
+# Definiere die eigentliche Funktion
+def original_function(x):
     return 0.5 * (x + 0.8) * (x + 1.8) * (x - 0.2) * (x - 0.3) * (x - 1.9) + 1
 
-# Generate datasets
+# Generiere Datensätze
 def generate_data(N, noise_variance, x_min, x_max):
     x = np.random.uniform(x_min, x_max, N)
-    y = true_function(x)
+    y = original_function(x)
     x_train, x_test = x[:N//2], x[N//2:]
     y_train, y_test = y[:N//2], y[N//2:]
     noise_train = np.random.normal(0, noise_variance**0.5, y_train.shape)
@@ -39,19 +39,19 @@ def train_model(x_train, y_train, epochs, model):
     return model, history.history['loss'][-1]
 
 # Plot data
-def plot_data(x_train, y_train, x_test, y_test, title, show_true_function, x_min, x_max):
+def plot_data(x_train, y_train, x_test, y_test, title, show_original_function, x_min, x_max):
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=x_train, y=y_train, mode='markers', name='Train Data', marker=dict(color='blue')))
     fig.add_trace(go.Scatter(x=x_test, y=y_test, mode='markers', name='Test Data', marker=dict(color='red')))
-    if show_true_function:
+    if show_original_function:
         x_range = np.linspace(x_min, x_max, 1000)
-        y_true = true_function(x_range)
-        fig.add_trace(go.Scatter(x=x_range, y=y_true, mode='lines', name='True Function', line=dict(color='green')))
+        y_original = original_function(x_range)
+        fig.add_trace(go.Scatter(x=x_range, y=y_original, mode='lines', name='Funktion', line=dict(color='green')))
     fig.update_layout(title=title)
     return fig
 
 # Plot predictions
-def plot_predictions(x, y, model, title, show_true_function, x_min, x_max, data_type):
+def plot_predictions(x, y, model, title, show_original_function, x_min, x_max, data_type):
     x_range = np.linspace(x_min, x_max, 1000)
     y_pred = model.predict(x_range).flatten()
     y_pred_points = model.predict(x).flatten()
@@ -60,42 +60,42 @@ def plot_predictions(x, y, model, title, show_true_function, x_min, x_max, data_
     fig.add_trace(go.Scatter(x=x, y=y, mode='markers', name=f'{data_type} Data', marker=dict(color='blue' if data_type == 'Train' else 'red')))
     fig.add_trace(go.Scatter(x=x, y=y_pred_points, mode='markers', name='Prediction Points', marker=dict(color='green')))
     fig.add_trace(go.Scatter(x=x_range, y=y_pred, mode='lines', name='Prediction Line', line=dict(color='green')))
-    if show_true_function:
-        y_true = true_function(x_range)
-        fig.add_trace(go.Scatter(x=x_range, y=y_true, mode='lines', name='True Function', line=dict(color='orange')))
+    if show_original_function:
+        y_original = original_function(x_range)
+        fig.add_trace(go.Scatter(x=x_range, y=y_original, mode='lines', name='Funktion', line=dict(color='orange')))
     fig.update_layout(title=title)
     return fig
 
 # Main function to handle training and plotting
-def main(N, noise_variance, x_min, x_max, num_layers, neurons_per_layer, epochs_unnoisy, epochs_best_fit, epochs_overfit, show_true_function):
+def main(N, noise_variance, x_min, x_max, num_layers, neurons_per_layer, epochs_unnoisy, epochs_best_fit, epochs_overfit, show_original_function):
     # Generate data
     x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy = generate_data(N, noise_variance, x_min, x_max)
 
     # Noiseless data plot
-    noiseless_plot = plot_data(x_train, y_train, x_test, y_test, "Noiseless Datasets", show_true_function, x_min, x_max)
+    noiseless_plot = plot_data(x_train, y_train, x_test, y_test, "Noiseless Datasets", show_original_function, x_min, x_max)
 
     # Noisy data plot
-    noisy_plot = plot_data(x_train, y_train_noisy, x_test, y_test_noisy, "Noisy Datasets", show_true_function, x_min, x_max)
+    noisy_plot = plot_data(x_train, y_train_noisy, x_test, y_test_noisy, "Noisy Datasets", show_original_function, x_min, x_max)
 
     # Unnoisy model
     model_unnoisy = create_model(num_layers, neurons_per_layer)
     model_unnoisy, loss_unnoisy_train = train_model(x_train, y_train, epochs_unnoisy, model_unnoisy)
-    unnoisy_plot_train = plot_predictions(x_train, y_train, model_unnoisy, "Unnoisy Model - Train Data", show_true_function, x_min, x_max, "Train")
-    unnoisy_plot_test = plot_predictions(x_test, y_test, model_unnoisy, "Unnoisy Model - Test Data", show_true_function, x_min, x_max, "Test")
+    unnoisy_plot_train = plot_predictions(x_train, y_train, model_unnoisy, "Unnoisy Model - Train Data", show_original_function, x_min, x_max, "Train")
+    unnoisy_plot_test = plot_predictions(x_test, y_test, model_unnoisy, "Unnoisy Model - Test Data", show_original_function, x_min, x_max, "Test")
     loss_unnoisy_test = model_unnoisy.evaluate(x_test, y_test, verbose=0)
 
     # Best-fit model
     model_best_fit = create_model(num_layers, neurons_per_layer)
     model_best_fit, loss_best_fit_train = train_model(x_train, y_train_noisy, epochs_best_fit, model_best_fit)
-    best_fit_plot_train = plot_predictions(x_train, y_train_noisy, model_best_fit, "Best-Fit Model - Train Data", show_true_function, x_min, x_max, "Train")
-    best_fit_plot_test = plot_predictions(x_test, y_test_noisy, model_best_fit, "Best-Fit Model - Test Data", show_true_function, x_min, x_max, "Test")
+    best_fit_plot_train = plot_predictions(x_train, y_train_noisy, model_best_fit, "Best-Fit Model - Train Data", show_original_function, x_min, x_max, "Train")
+    best_fit_plot_test = plot_predictions(x_test, y_test_noisy, model_best_fit, "Best-Fit Model - Test Data", show_original_function, x_min, x_max, "Test")
     loss_best_fit_test = model_best_fit.evaluate(x_test, y_test_noisy, verbose=0)
 
     # Overfit model
     model_overfit = create_model(num_layers, neurons_per_layer)
     model_overfit, loss_overfit_train = train_model(x_train, y_train_noisy, epochs_overfit, model_overfit)
-    overfit_plot_train = plot_predictions(x_train, y_train_noisy, model_overfit, "Overfit Model - Train Data", show_true_function, x_min, x_max, "Train")
-    overfit_plot_test = plot_predictions(x_test, y_test_noisy, model_overfit, "Overfit Model - Test Data", show_true_function, x_min, x_max, "Test")
+    overfit_plot_train = plot_predictions(x_train, y_train_noisy, model_overfit, "Overfit Model - Train Data", show_original_function, x_min, x_max, "Train")
+    overfit_plot_test = plot_predictions(x_test, y_test_noisy, model_overfit, "Overfit Model - Test Data", show_original_function, x_min, x_max, "Test")
     loss_overfit_test = model_overfit.evaluate(x_test, y_test_noisy, verbose=0)
 
     return (noiseless_plot, noisy_plot,
@@ -105,7 +105,7 @@ def main(N, noise_variance, x_min, x_max, num_layers, neurons_per_layer, epochs_
 
 # Discussion and Documentation
 discussion = """
-## Discussion
+## Experimente, Resultate und Diskussion
 
 The task of regression using a feed-forward neural network (FFNN) is a fundamental problem in machine learning. By training the FFNN on noisy data generated from an unknown ground truth function, we simulate real-world scenarios where the underlying function is not explicitly known, and the data is subject to noise and uncertainties.
 
@@ -131,36 +131,36 @@ The code follows a modular structure, with separate functions for each task, mak
 
 # Gradio Interface
 inputs = [
-    gr.Slider(50, 200, step=1, value=100, label="Data Points (N)"),
-    gr.Slider(0.01, 0.1, step=0.01, value=0.05, label="Noise Variance (V)"),
-    gr.Slider(-3, -1, step=0.1, value=-2.0, label="X Min"),
-    gr.Slider(1, 3, step=0.1, value=2.0, label="X Max"),
-    gr.Slider(1, 5, step=1, value=2, label="Number of Hidden Layers"),
-    gr.Slider(50, 200, step=10, value=100, label="Neurons per Hidden Layer"),
-    gr.Slider(10, 500, step=10, value=100, label="Epochs (Unnoisy Model)"),
-    gr.Slider(100, 500, step=10, value=200, label="Epochs (Best-Fit Model)"),
-    gr.Slider(500, 2000, step=10, value=500, label="Epochs (Overfit Model)"),
-    gr.Checkbox(value=True, label="Show True Function")
+    gr.Slider(10, 250, step=1, value=100, label="Anzahl der Datenpunkte (N)"),
+    gr.Slider(0.01, 0.2, step=0.01, value=0.05, label="Noise Variance (V)"),
+    gr.Slider(-10, -1, step=0.1, value=-2.0, label="X Min"),
+    gr.Slider(1, 10, step=0.1, value=2.0, label="X Max"),
+    gr.Slider(1, 10, step=1, value=2, label="Anzahl der Hidden Layers"),
+    gr.Slider(10, 250, step=10, value=100, label="Anzahl der Neuronen pro Hidden Layer"),
+    gr.Slider(10, 500, step=10, value=150, label="Trainings-Epochen (Modell ohne Rauschen)"),
+    gr.Slider(100, 500, step=10, value=200, label="Trainings-Epochen (Best-Fit-Modell)"),
+    gr.Slider(500, 2500, step=10, value=500, label="Trainings-Epochen (Overfit-Modell)"),
+    gr.Checkbox(value=True, label="Funktion y(x) anzeigen?")
 ]
 
 outputs = [
-    gr.Plot(label="Noiseless Datasets"),
-    gr.Plot(label="Noisy Datasets"),
-    gr.Plot(label="Unnoisy Model - Train Data"),
-    gr.Textbox(label="Unnoisy Model Losses"),
-    gr.Plot(label="Unnoisy Model - Test Data"),
-    gr.Plot(label="Best-Fit Model - Train Data"),
-    gr.Textbox(label="Best-Fit Model Losses"),
-    gr.Plot(label="Best-Fit Model - Test Data"),
-    gr.Plot(label="Overfit Model - Train Data"),
-    gr.Textbox(label="Overfit Model Losses"),
-    gr.Plot(label="Overfit Model - Test Data")
+    gr.Plot(label="Datensätze ohne Rauschen"),
+    gr.Plot(label="Datensätze mit Rauschen"),
+    gr.Plot(label="Clean Model - Trainingsdaten)"),
+    gr.Textbox(label="Losses (MSE) ohne Rauschen"),
+    gr.Plot(label="Modell ohne Rauschen - Testdaten"),
+    gr.Plot(label="Best-Fit-Modell - Trainingsdaten"),
+    gr.Textbox(label="Losses (MSE) beim Best-Fit-Modell"),
+    gr.Plot(label="Best-Fit-Modell - Testdaten"),
+    gr.Plot(label="Overfit Model - Trainingsdaten"),
+    gr.Textbox(label="Losses (MSE) beim Overfit-Modell"),
+    gr.Plot(label="Overfit-Modell - Testdaten")
 ]
 
 def wrapper(*args):
     return main(*args)
 
-def update_true_function(show_true_function):
+def update_original_function(show_original_function):
     N = inputs[0].value
     noise_variance = inputs[1].value
     x_min = inputs[2].value
@@ -170,17 +170,32 @@ def update_true_function(show_true_function):
     epochs_unnoisy = inputs[6].value
     epochs_best_fit = inputs[7].value
     epochs_overfit = inputs[8].value
-    return main(N, noise_variance, x_min, x_max, num_layers, neurons_per_layer, epochs_unnoisy, epochs_best_fit, epochs_overfit, show_true_function)
+    return main(N, noise_variance, x_min, x_max, num_layers, neurons_per_layer, epochs_unnoisy, epochs_best_fit, epochs_overfit, show_original_function)
 
 demo = gr.Blocks()
 
 with demo:
-    gr.Markdown("## Regression with Feed-Forward Neural Network")
-    gr.Markdown(discussion)
+    gr.Markdown("## Regression mit FFNN")
+
+    gr.Markdown("### Datengenerierung")
     with gr.Column():
-        for input_widget in inputs:
+        for input_widget in inputs[:4]:
             input_widget.render()
-    gr.Button("Generate Data and Train Models").click(wrapper, inputs, outputs)
+
+    gr.Markdown("### Modell-Definition")
+    with gr.Column():
+        for input_widget in inputs[4:6]:
+            input_widget.render()
+
+    gr.Markdown("### Modell-Training")
+    with gr.Column():
+        for input_widget in inputs[6:9]:
+            input_widget.render()
+
+    gr.Markdown("### y(x) = 0.5 * (x + 0.8) * (x + 1.8) * (x - 0.2) * (x - 0.3) * (x - 1.9) + 1")
+    with gr.Column():
+        inputs[9].render()
+    gr.Button("Daten generieren und Modelle trainieren").click(wrapper, inputs, outputs)
     with gr.Row():
         with gr.Column():
             outputs[0].render()
@@ -210,6 +225,8 @@ with demo:
             outputs[10].render()
     with gr.Row():
         outputs[9].render()
-    inputs[9].change(fn=update_true_function, inputs=inputs, outputs=[outputs[0], outputs[1], outputs[2], outputs[4], outputs[5], outputs[7], outputs[8], outputs[10]])
+    inputs[9].change(fn=update_original_function, inputs=inputs, outputs=[outputs[0], outputs[1], outputs[2], outputs[4], outputs[5], outputs[7], outputs[8], outputs[10
+
+    gr.Markdown(discussion)
 
 demo.launch()
