@@ -108,7 +108,6 @@ gr.Interface(
         gr.Plot(label="FFNN Regression Results"),
         gr.Textbox(label="Loss Values")
     ],
-    layout="vertical",
     title="FFNN Regression with Plotly and Gradio",
     description="Train and visualize FFNN models on noisy and clean data."
 ).launch()
