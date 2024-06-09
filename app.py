@@ -17,9 +17,10 @@ def generate_data(N, noise_variance, x_min, x_max):
     x_train, x_test = x[:N//2], x[N//2:]
     y_train, y_test = y[:N//2], y[N//2:]
 
-    noise = np.random.normal(0, noise_variance**0.5, y_train.shape)
-    y_train_noisy = y_train + noise
-    y_test_noisy = y_test + noise
+    noise_train = np.random.normal(0, noise_variance**0.5, y_train.shape)
+    noise_test = np.random.normal(0, noise_variance**0.5, y_test.shape)
+    y_train_noisy = y_train + noise_train
+    y_test_noisy = y_test + noise_test
     
     return x_train, y_train, x_test, y_test, y_train_noisy, y_test_noisy
 
@@ -90,20 +91,29 @@ inputs = [
     gr.Slider(0.01, 0.1, step=0.01, value=0.05, label="Noise Variance (V)"),
     gr.Slider(-3, -1, step=0.1, value=-2.0, label="X Min"),
     gr.Slider(1, 3, step=0.1, value=2.0, label="X Max"),
-    gr.Slider(50, 200, step=1, value=100, label="Epochs for Unnoisy Model"),
-    gr.Slider(100, 300, step=1, value=200, label="Epochs for Best-Fit Model"),
-    gr.Slider(300, 600, step=1, value=500, label="Epochs for Overfit Model")
+    gr.Slider(50, 500, step=10, value=100, label="Epochs (Unnoisy Model)"),
+    gr.Slider(50, 500, step=10, value=200, label="Epochs (Best-Fit Model)"),
+    gr.Slider(50, 500, step=10, value=500, label="Epochs (Overfit Model)")
 ]
 
-outputs = [gr.Plot() for _ in range(8)]
+outputs = [
+    gr.Plot(label="Noiseless Datasets"),
+    gr.Plot(label="Noisy Datasets"),
+    gr.Plot(label="Unnoisy Model - Train Data"),
+    gr.Plot(label="Unnoisy Model - Test Data"),
+    gr.Plot(label="Best-Fit Model - Train Data"),
+    gr.Plot(label="Best-Fit Model - Test Data"),
+    gr.Plot(label="Overfit Model - Train Data"),
+    gr.Plot(label="Overfit Model - Test Data")
+]
 
+# Define the interface
 interface = gr.Interface(
-    fn=main,
-    inputs=inputs,
+    fn=main, 
+    inputs=inputs, 
     outputs=outputs,
-    title="Regression Learning with Feed-Forward Neural Network",
-    description="Train and evaluate models on noiseless and noisy datasets",
-    layout="grid"
+    title="Feed-Forward Neural Network Regression",
+    description="Regression learning using a Feed-Forward Neural Network (FFNN)."
 )
 
 interface.launch()
