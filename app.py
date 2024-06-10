@@ -225,7 +225,7 @@ with demo:
     with gr.Row():
         with gr.Column():
             gr.Markdown("""# Technische Dokumentation
-                Numpy: Für numerische Berechnungen (u. a. zum Generieren der zufälligen Datensätze und Setzen der x-Range im Diagramm\n
+                NumPy: Für numerische Berechnungen (u. a. zum Generieren der zufälligen Datensätze und Setzen der x-Range im Diagramm\n
                 Gradio: Zur Anzeige der UI-Elemente\n
                 TensorFlow Keras: Mit dem ML-Framework wurde die Architektur des neuronalen Netzes definiert (u. a. Adam Optimization Algorithm, Activation Function, Neurons per Layer)\n
                 Plotly: Zur Visualisierung der Diagramme\n\n
