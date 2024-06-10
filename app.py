@@ -108,13 +108,18 @@ discussion = """
 ## Experimente, Resultate und Diskussion
 
 Zunächst ist dies ein übliches reales Szenario: Mit dem FFNN können z. B. verrauschte Daten trainiert werden aus der für die Modelle unbekannten Ground-Truth-Funktion.\n
-Deswegen generiere ich Datenpunkte aus einer gegebenen Funktion und füge Rauschen hinzu, um Bedingungen der echten Welt zu simulieren (Aufteilen in Trainings- und Testdaten). Im Rahmen des gesamten Trainings müssen die Testdaten unberührt bleiben.\n
+Deswegen generiere ich Datenpunkte aus einer gegebenen Funktion und füge Rauschen hinzu, um Bedingungen der echten Welt zu simulieren (Aufteilen in Trainings- und Testdaten). Im Rahmen des gesamten Trainings müssen die Testdaten unbedingt unberührt/unabhängig bleiben (Voraussetzung der Predictions).\n
 
 Trainiert werden drei Modelle: eines mit den Daten ohne Rauschen (clean model), eines mit den verrauschten Daten für die beste Anpassung (Best-Fit-Modell) und eines zur Demonstration von Overfitting mit den verrauschten Daten mit einer höheren Anzahl von Trainings-Epochen.\n\n
 
 Die meisten Parameter wurden so eingestellt wie vorgegeben (siehe Einstellmöglichkeiten unter "Datengenerierung" und "Modell-Definition" in der Lösung. Was angepasst wurde, sind die Trainings-Epochen für die verschiedenen Modelle, die im Folgenden kurz erläutert werden: \n
-
-
+Beim Modell ohne Rauschen eignet sich die Anzahl der Trainings-Epochen von 100 bereits, 150 ist noch präziser und liefert z. B. einen Train Loss von 0,0064 und Test Loss von 0,0189.\n
+Das Best-Fit-Modell habe ich unterschiedlich eingestellt, z. B. Epochenanzahl von 190 oder 200. Bei 190 beträgt eines meiner besten Ergebnisse 0,0373 (Train Loss) und 0,0748 (Test Loss). Hier war wichtig, dass Train und Test Loss eine geringe Differenz haben, weil dies auf eine gute Generalisierung hinweist.\n
+Train und Test Loss sind niedrig, aber der Test Loss ist meistens etwas höher als der Train Loss. Dies liegt daran, dass das Modell auf neue Daten gut generalisieren kann, aber nicht unbedingt so gut wie auf die Trainingsdaten.
+Beim Overfitting-Modell habe ich versucht, einen geringen Train Loss, aber einen hohen Test Loss zu bekommen (es kann also nicht gut auf neue, unbekannte Daten verallgemeinern). Overfitting trifft bei einer deutlich höheren Epochenanzahl von über 500 auf. 
+Als ich die Epochenanzahl bei 650 hatte, war der Train Loss bei der Train Loss bei 0,0286 und der Test Loss bei 0,527.\n
+Die Komplexität des Modells und die Parametereinstellungen sind entscheidend für die Leistung des neuronalen Netzes. Das FFNN kann sich dann anders verhalten (z. B. kann der Train Loss 0 betragen, wenn die Datenpunkte deutlich reduziert werden).\n
+Neben den hier genannten Punkten habe ich auch verschiedene Methoden gelernt, um Overfitting zu vermeiden (nur im Rahmen der Recherche). Zudem ist entscheidend, dass ein Modell, das nicht perfekt die Trainingsdaten gelernt hat, eine bessere Generalisierungsfähigkeit aufweisen kann.
 """
 
 # Gradio Interface
@@ -126,8 +131,8 @@ inputs = [
     gr.Slider(1, 10, step=1, value=2, label="Anzahl der verborgenen Schichten (Hidden Layers)"),
     gr.Slider(10, 250, step=10, value=100, label="Anzahl der Neuronen pro verborgener Schicht"),
     gr.Slider(10, 500, step=10, value=150, label="Trainings-Epochen (Modell ohne Rauschen)"),
-    gr.Slider(100, 500, step=10, value=200, label="Trainings-Epochen (Best-Fit-Modell)"),
-    gr.Slider(500, 2500, step=10, value=500, label="Trainings-Epochen (Overfit-Modell)"),
+    gr.Slider(100, 500, step=10, value=190, label="Trainings-Epochen (Best-Fit-Modell)"),
+    gr.Slider(500, 2500, step=10, value=620, label="Trainings-Epochen (Overfit-Modell)"),
     gr.Checkbox(value=True, label="Ground-Truth-Funktion y(x) anzeigen?")
 ]
 
