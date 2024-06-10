@@ -107,18 +107,18 @@ def main(N, noise_variance, x_min, x_max, num_layers, neurons_per_layer, epochs_
 discussion = """
 ## Experimente, Resultate und Diskussion
 
-Zunächst ist dies ein übliches reales Szenario: Mit dem FFNN können z. B. verrauschte Daten trainiert werden aus der für die Modelle unbekannten Ground-Truth-Funktion.\n
+Zunächst ist dies ein übliches reales Szenario: Mit dem FFNN können z. B. verrauschte Daten trainiert werden aus der für die Modelle unbekannten Ground-Truth-Funktion. 
 Deswegen generiere ich Datenpunkte aus einer gegebenen Funktion und füge Rauschen hinzu, um Bedingungen der echten Welt zu simulieren (Aufteilen in Trainings- und Testdaten). Im Rahmen des gesamten Trainings müssen die Testdaten unbedingt unberührt/unabhängig bleiben (Voraussetzung der Predictions).\n
 
-Trainiert werden drei Modelle: eines mit den Daten ohne Rauschen (clean model), eines mit den verrauschten Daten für die beste Anpassung (Best-Fit-Modell) und eines zur Demonstration von Overfitting mit den verrauschten Daten mit einer höheren Anzahl von Trainings-Epochen.\n\n
+Trainiert werden drei Modelle: eines mit den Daten ohne Rauschen (clean model), eines mit den verrauschten Daten für die beste Anpassung (Best-Fit-Modell) und eines zur Demonstration von Overfitting mit den verrauschten Daten mit einer höheren Anzahl von Trainings-Epochen.\n
 
 Die meisten Parameter wurden so eingestellt wie vorgegeben (siehe Einstellmöglichkeiten unter "Datengenerierung" und "Modell-Definition" in der Lösung. Was angepasst wurde, sind die Trainings-Epochen für die verschiedenen Modelle, die im Folgenden kurz erläutert werden: \n
-Beim Modell ohne Rauschen eignet sich die Anzahl der Trainings-Epochen von 100 bereits, 150 ist noch präziser und liefert z. B. einen Train Loss von 0,0064 und Test Loss von 0,0189.\n
-Das Best-Fit-Modell habe ich unterschiedlich eingestellt, z. B. Epochenanzahl von 190 oder 200. Bei 190 beträgt eines meiner besten Ergebnisse 0,0373 (Train Loss) und 0,0748 (Test Loss). Hier war wichtig, dass Train und Test Loss eine geringe Differenz haben, weil dies auf eine gute Generalisierung hinweist.\n
-Train und Test Loss sind niedrig, aber der Test Loss ist meistens etwas höher als der Train Loss. Dies liegt daran, dass das Modell auf neue Daten gut generalisieren kann, aber nicht unbedingt so gut wie auf die Trainingsdaten.
+Beim Modell ohne Rauschen eignet sich die Anzahl der Trainings-Epochen von 100 bereits, 150 ist noch präziser und liefert z. B. einen Train Loss von 0,0064 und Test Loss von 0,0189. 
+Das Best-Fit-Modell habe ich unterschiedlich eingestellt, z. B. Epochenanzahl von 190 oder 200. Bei 190 beträgt eines meiner besten Ergebnisse 0,0373 (Train Loss) und 0,0748 (Test Loss). Hier war wichtig, dass Train und Test Loss eine geringe Differenz haben, weil dies auf eine gute Generalisierung hinweist. 
+Train und Test Loss sind niedrig, aber der Test Loss ist meistens etwas höher als der Train Loss. Dies liegt daran, dass das Modell auf neue Daten gut generalisieren kann, aber nicht unbedingt so gut wie auf die Trainingsdaten. 
 Beim Overfitting-Modell habe ich versucht, einen geringen Train Loss, aber einen hohen Test Loss zu bekommen (es kann also nicht gut auf neue, unbekannte Daten verallgemeinern). Overfitting trifft bei einer deutlich höheren Epochenanzahl von über 500 auf. 
 Als ich die Epochenanzahl bei 650 hatte, war der Train Loss bei der Train Loss bei 0,0286 und der Test Loss bei 0,527.\n
-Die Komplexität des Modells und die Parametereinstellungen sind entscheidend für die Leistung des neuronalen Netzes. Das FFNN kann sich dann anders verhalten (z. B. kann der Train Loss 0 betragen, wenn die Datenpunkte deutlich reduziert werden).\n
+Die Komplexität des Modells und die Parametereinstellungen sind entscheidend für die Leistung des neuronalen Netzes. Das FFNN kann sich dann anders verhalten (z. B. kann der Train Loss 0 betragen, wenn die Datenpunkte deutlich reduziert werden).
 Neben den hier genannten Punkten habe ich auch verschiedene Methoden gelernt, um Overfitting zu vermeiden (nur im Rahmen der Recherche). Zudem ist entscheidend, dass ein Modell, das nicht perfekt die Trainingsdaten gelernt hat, eine bessere Generalisierungsfähigkeit aufweisen kann.
 """
 
@@ -244,14 +244,14 @@ with demo:
             gr.Markdown("""
                 # Fachliche Dokumentation
         
-                Es soll ein neuronales Netzwerk für eine Regressionsproblematik trainiert werden. Verschiedene Szenarien können damit simuliert werden.\n
-                Zunächst wird die vorgegebene Ground-Truth-Funktion definiert. Von dieser können Datenpunkte unterschiedlicher Rauschlevel generiert werden.\n
+                Es soll ein neuronales Netzwerk für eine Regressionsproblematik trainiert werden. Verschiedene Szenarien können damit simuliert werden. 
+                Zunächst wird die vorgegebene Ground-Truth-Funktion definiert. Von dieser können Datenpunkte mit unterschiedlichem Rausch-Niveau generiert werden. 
                 Im Rahmen der Aufgabe waren die unterschiedlichen Parameter (Möglichkeiten zum Trainieren und Anpassen der Modelle) überwiegend vorgegeben (siehe Aufgabenstellung).\n
-                Die 100 Datenpunkte werden in Trainings- und Testdatensätze aufgeteilt (50:50). Drei Modelle werden trainiert: ein Modell auf den rauschfreien Daten,\n 
-                ein Modell auf den verrauschten Daten zur bestmöglichen Anpassung (Best-Fit-Modell) und ein Modell mit einer erhöhten Anzahl von Trainings-Epochen, um Overfitting zu beobachten (Overfit-Modell).\n\n
+                Die 100 Datenpunkte werden in Trainings- und Testdatensätze aufgeteilt (50:50). Drei Modelle werden trainiert: ein Modell auf den rauschfreien Daten, 
+                ein Modell auf den verrauschten Daten zur bestmöglichen Anpassung (Best-Fit-Modell) und ein Modell mit einer erhöhten Anzahl von Trainings-Epochen, um Overfitting zu beobachten (Overfit-Modell).\n
 
-                Durch den Vergleich der MSE der Trainings- und Testdaten kann Overfitting beobachtet werden und geprüft werden, welches Modell am besten generalisiert.\n
-                Die Gradio-UI ermöglicht es den Benutzern, verschiedene Parameter anzupassen, wie beispielsweise die Anzahl der Datenpunkte, Noise Variance und Anzahl der Trainings-Epochen.\n
+                Durch den Vergleich der MSE der Trainings- und Testdaten kann Overfitting beobachtet werden und geprüft werden, welches Modell am besten generalisiert. 
+                Die Gradio-UI ermöglicht es den Benutzern, verschiedene Parameter anzupassen, wie beispielsweise die Anzahl der Datenpunkte, Noise Variance und Anzahl der Trainings-Epochen. 
                     
                 ## Quellen und hilfreiche Links:
                 – GeeksforGeeks (2021): Scatter plot in Plotly using graph_objects class. Online: https://www.geeksforgeeks.org/scatter-plot-in-plotly-using-graph_objects-class/ \n
