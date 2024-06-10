@@ -45,7 +45,7 @@ def plot_data(x_train, y_train, x_test, y_test, title, show_original_function, x
     if show_original_function:
         x_range = np.linspace(x_min, x_max, 1000)
         y_original = original_function(x_range)
-        fig.add_trace(go.Scatter(x=x_range, y=y_original, mode='lines', name='y(x)', line=dict(color='green')))
+        fig.add_trace(go.Scatter(x=x_range, y=y_original, mode='lines', name='GTF', line=dict(color='green')))
     fig.update_layout(title=title)
     return fig
 
