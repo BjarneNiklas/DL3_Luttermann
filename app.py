@@ -8,7 +8,7 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau
 import chardet
 
 # Pfad zur Textdatei (ersetzen Sie 'path/to/your/textfile.txt' durch den tatsächlichen Pfad)
-file_path = 'article.pdf'
+file_path = 'aricle.pdf'
 
 # Datei einlesen mit automatischer Kodierungserkennung
 with open(file_path, 'rb') as file:
@@ -91,25 +91,23 @@ def sequence_to_text(seq):
 
 
 import gradio as gr
-import numpy as np
-import tensorflow as tf
 
 # Modell laden
 model = tf.keras.models.load_model('lstm_model.h5')
 
 # Definition der Gradio-Komponenten
 input_text = gr.inputs.Textbox(lines=2, label="Text Prompt")
-word_choices = gr.inputs.Dropdown(choices=[], label="Select Word")
-predict_button = gr.inputs.Button(label="Predict")
-next_button = gr.inputs.Button(label="Next")
-auto_button = gr.inputs.Button(label="Auto")
-stop_button = gr.inputs.Button(label="Stop")
+predict_button = gr.Button(label="Predict")
+next_button = gr.Button(label="Next")
+auto_button = gr.Button(label="Auto")
+stop_button = gr.Button(label="Stop")
+word_choices = gr.Dropdown(label="Select Word", choices=[])
 
 # Funktion zur Vorhersage mit Beam Search
 def predict(text):
     predictions, probabilities = predict_with_beam_search(text, beam_width=3)
     choices = [(f"{word} ({prob:.2f})", word) for word, prob in zip(predictions, probabilities)]
-    return gr.outputs.Dropdown.update(choices=choices, value=None)
+    return gr.Dropdown.update(choices=choices, value=None)
 
 # Funktion zur Auswahl des nächsten Wortes
 def next_word(text, choice):
@@ -124,15 +122,17 @@ def auto_predict(text):
 # Gradio-Interface erstellen
 interface = gr.Interface(
     fn=predict,
-    inputs=[input_text],
+    inputs=input_text,
     outputs=word_choices,
     title="Language Model mit LSTM und Beam Search",
     description="Geben Sie einen Text ein und das Modell sagt das nächste Wort voraus. Nutzen Sie Beam Search zur Verbesserung der Vorhersagequalität."
 )
 
-interface.add_components([predict_button, next_button, auto_button, stop_button])
-interface.add_func(fn=next_word, inputs=[input_text, word_choices], outputs=input_text, label="Next")
-interface.add_func(fn=auto_predict, inputs=input_text, outputs=input_text, label="Auto")
+# Buttons und Funktionen hinzufügen
+interface.add_button("Predict", predict, [input_text], word_choices)
+interface.add_button("Next", next_word, [input_text, word_choices], input_text)
+interface.add_button("Auto", auto_predict, input_text, input_text)
+interface.add_button("Stop", None)
 
 # Interface starten
 interface.launch()
