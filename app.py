@@ -1,18 +1,3 @@
-import PyPDF2
-
-def read_pdf(file_path):
-    with open(file_path, 'rb') as file:
-        reader = PyPDF2.PdfReader(file)
-        text = ""
-        for page_num in range(len(reader.pages)):
-            page = reader.pages[page_num]
-            text += page.extract_text()
-    return text
-
-# Beispiel PDF-Datei
-file_path = 'article.pdf'
-text = read_pdf(file_path)
-
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
@@ -34,7 +19,7 @@ def read_pdf(file_path):
     return text
 
 # Beispiel PDF-Datei
-file_path = 'path/to/your/pdf_file.pdf'
+file_path = 'article.pdf'
 text = read_pdf(file_path)
 
 # Tokenisierung und Sequenzierung
