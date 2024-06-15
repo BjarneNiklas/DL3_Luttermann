@@ -1,3 +1,19 @@
+import PyPDF2
+import chardet
+
+def read_pdf(file_path):
+    with open(file_path, 'rb') as file:
+        reader = PyPDF2.PdfFileReader(file)
+        text = ""
+        for page_num in range(reader.numPages):
+            page = reader.getPage(page_num)
+            text += page.extract_text()
+    return text
+
+# Beispiel PDF-Datei
+file_path = 'article.pdf'
+text = read_pdf(file_path)
+
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
@@ -5,19 +21,6 @@ from tensorflow.keras.layers import LSTM, Dense, Embedding, Dropout, BatchNormal
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.callbacks import ReduceLROnPlateau
-import chardet
-
-# Pfad zur Textdatei (ersetzen Sie 'path/to/your/textfile.txt' durch den tatsächlichen Pfad)
-file_path = 'article.pdf'
-
-# Datei einlesen mit automatischer Kodierungserkennung
-with open(file_path, 'rb') as file:
-    raw_data = file.read()
-    result = chardet.detect(raw_data)
-    encoding = result['encoding']
-
-with open(file_path, 'r', encoding=encoding) as file:
-    text = file.read()
 
 # Tokenisierung und Sequenzierung
 tokenizer = Tokenizer()
@@ -61,7 +64,6 @@ history = model.fit(xs, ys, epochs=30, batch_size=32, callbacks=[reduce_lr], ver
 
 # Modell speichern
 model.save('lstm_model.h5')
-
 
 def beam_search_decoder(data, k):
     sequences = [[list(), 1.0]]
