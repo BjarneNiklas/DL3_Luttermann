@@ -2,3 +2,4 @@ tensorflow
 plotly
 matplotlib
 numpy
+chardet
