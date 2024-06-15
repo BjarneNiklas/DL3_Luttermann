@@ -8,7 +8,7 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau
 import chardet
 
 # Pfad zur Textdatei (ersetzen Sie 'path/to/your/textfile.txt' durch den tatsächlichen Pfad)
-file_path = 'path/to/your/textfile.txt'
+file_path = 'article.pdf'
 
 # Datei einlesen mit automatischer Kodierungserkennung
 with open(file_path, 'rb') as file:
