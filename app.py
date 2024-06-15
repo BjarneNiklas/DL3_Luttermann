@@ -7,7 +7,7 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.callbacks import ReduceLROnPlateau
 
 # Pfad zur Textdatei (ersetzen Sie 'path/to/your/textfile.txt' durch den tatsächlichen Pfad)
-file_path = 'trainingdata/article.pdf'
+file_path = 'article.pdf'
 
 # Datei einlesen
 with open(file_path, 'r', encoding='utf-8') as file:
