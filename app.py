@@ -60,7 +60,7 @@ model.compile(loss='categorical_crossentropy', optimizer=tf.keras.optimizers.Ada
 reduce_lr = ReduceLROnPlateau(monitor='loss', factor=0.2, patience=3, min_lr=0.001)
 
 # Modell trainieren
-history = model.fit(xs, ys, epochs=30, batch_size=32, callbacks=[reduce_lr], verbose=1)
+history = model.fit(xs, ys, epochs=3, batch_size=32, callbacks=[reduce_lr], verbose=1)
 
 # Modell speichern
 model.save('lstm_model.h5')
