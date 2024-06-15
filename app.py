@@ -1,12 +1,11 @@
 import PyPDF2
-import chardet
 
 def read_pdf(file_path):
     with open(file_path, 'rb') as file:
-        reader = PyPDF2.PdfFileReader(file)
+        reader = PyPDF2.PdfReader(file)
         text = ""
-        for page_num in range(reader.numPages):
-            page = reader.getPage(page_num)
+        for page_num in range(len(reader.pages)):
+            page = reader.pages[page_num]
             text += page.extract_text()
     return text
 
@@ -21,6 +20,22 @@ from tensorflow.keras.layers import LSTM, Dense, Embedding, Dropout, BatchNormal
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.callbacks import ReduceLROnPlateau
+import gradio as gr
+import PyPDF2
+
+# PDF-Dateien einlesen und Text extrahieren
+def read_pdf(file_path):
+    with open(file_path, 'rb') as file:
+        reader = PyPDF2.PdfReader(file)
+        text = ""
+        for page_num in range(len(reader.pages)):
+            page = reader.pages[page_num]
+            text += page.extract_text()
+    return text
+
+# Beispiel PDF-Datei
+file_path = 'path/to/your/pdf_file.pdf'
+text = read_pdf(file_path)
 
 # Tokenisierung und Sequenzierung
 tokenizer = Tokenizer()
@@ -65,6 +80,7 @@ history = model.fit(xs, ys, epochs=30, batch_size=32, callbacks=[reduce_lr], ver
 # Modell speichern
 model.save('lstm_model.h5')
 
+# Beam Search Implementierung
 def beam_search_decoder(data, k):
     sequences = [[list(), 1.0]]
     for row in data:
@@ -91,10 +107,7 @@ def predict_with_beam_search(text, beam_width=3):
 def sequence_to_text(seq):
     return ' '.join([tokenizer.index_word[i] for i in seq if i > 0])
 
-
-import gradio as gr
-
-# Modell laden
+# Gradio-Interface
 model = tf.keras.models.load_model('lstm_model.h5')
 
 # Definition der Gradio-Komponenten
@@ -138,3 +151,5 @@ interface.add_button("Stop", None)
 
 # Interface starten
 interface.launch()
+
+
