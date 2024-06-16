@@ -42,7 +42,7 @@ model.add(Dense(total_words, activation='softmax'))
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 # Modell trainieren
-model.fit(X, y, epochs=3, batch_size=32, verbose=1)
+model.fit(X, y, epochs=1, batch_size=32, verbose=1)
 
 # Modell speichern und laden
 model.save('word_prediction_model.h5')
