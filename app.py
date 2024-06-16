@@ -71,7 +71,7 @@ perplexity_callback = PerplexityCallback()
 history = model.fit(xs, ys, epochs=3, batch_size=32, callbacks=[reduce_lr, perplexity_callback], verbose=1)
 
 # Modell speichern
-model.save('lstm_model.h5')
+model.save('lstm_model.keras')
 
 # Beam Search Implementierung
 def beam_search_decoder(data, k):
@@ -101,15 +101,7 @@ def sequence_to_text(seq):
     return ' '.join([tokenizer.index_word[i] for i in seq if i > 0])
 
 # Gradio-Interface
-model = tf.keras.models.load_model('lstm_model.h5')
-
-# Definition der Gradio-Komponenten
-input_text = gr.Textbox(lines=2, label="Text Prompt")
-predict_button = gr.Button(label="Predict")
-next_button = gr.Button(label="Next")
-auto_button = gr.Button(label="Auto")
-stop_button = gr.Button(label="Stop")
-word_choices = gr.Dropdown(label="Select Word", choices=[])
+model = tf.keras.models.load_model('lstm_model.keras')
 
 # Funktion zur Vorhersage mit Beam Search
 def predict(text):
@@ -130,16 +122,16 @@ def auto_predict(text):
 # Gradio-Interface erstellen
 interface = gr.Interface(
     fn=predict,
-    inputs=input_text,
-    outputs=word_choices,
+    inputs=[gr.Textbox(lines=2, label="Text Prompt")],
+    outputs=[gr.Dropdown(label="Select Word")],
     title="Language Model mit LSTM und Beam Search",
     description="Geben Sie einen Text ein und das Modell sagt das nächste Wort voraus. Nutzen Sie Beam Search zur Verbesserung der Vorhersagequalität."
 )
 
 # Buttons und Funktionen hinzufügen
-interface.add_button("Predict", predict, [input_text], word_choices)
-interface.add_button("Next", next_word, [input_text, word_choices], input_text)
-interface.add_button("Auto", auto_predict, input_text, input_text)
+interface.add_button("Predict", predict)
+interface.add_button("Next", next_word)
+interface.add_button("Auto", auto_predict)
 interface.add_button("Stop", None)
 
 # Interface starten
