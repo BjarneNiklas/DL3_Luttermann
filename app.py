@@ -8,15 +8,6 @@ from tensorflow.keras.layers import Embedding, LSTM, Dense
 import gradio as gr
 import time
 
-# Daten laden
-df = pd.read_csv('path/to/10k_german_news_articles.csv')
-texts = df['Body'].dropna().tolist()  # Passen Sie den Spaltennamen an und entfernen Sie NaNs
-
-# Tokenisierung und Sequenzierung
-tokenizer = Tokenizer()
-tokenizer.fit_on_texts(texts)
-total_words = len(tokenizer.word_index) + 1
-
 input_sequences = []
 for line in texts:
     token_list = tokenizer.texts_to_sequences([line])[0]
