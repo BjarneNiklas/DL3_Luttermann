@@ -6,6 +6,7 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Embedding, LSTM, Dense
 import gradio as gr
+import time
 
 # Daten laden
 df = pd.read_csv('Articles.csv')
@@ -69,49 +70,52 @@ def append_word(prompt, word):
 def generate_text(prompt, num_words):
     return predict_next_words(prompt, num_words)
 
+class GradioApp:
+    def __init__(self):
+        self.auto_mode = False
+
+    def predict_next(self, prompt):
+        predictions = predict_single_word(prompt)
+        return {word: f"{prob:.2f}" for word, prob in predictions}
+
+    def continue_text(self, prompt):
+        next_word = predict_single_word(prompt)[0][0]
+        new_prompt = f"{prompt} {next_word}"
+        predictions = self.predict_next(new_prompt)
+        return new_prompt, predictions
+
+    def auto_predict(self, prompt):
+        self.auto_mode = True
+        while self.auto_mode:
+            prompt, predictions = self.continue_text(prompt)
+            time.sleep(1)
+        return prompt, predictions
+
+    def stop_auto_predict(self):
+        self.auto_mode = False
+
+    def reset_text(self):
+        return "", ""
+
+app = GradioApp()
+
 with gr.Blocks() as demo:
     prompt = gr.Textbox(label="Eingabe", placeholder="Geben Sie Ihren Text ein...")
     prediction_output = gr.Label(label="Vorhersagen")
     
-    def predict_next(prompt):
-        predictions = predict_single_word(prompt)
-        prediction_output.update(value={word: f"{prob:.2f}" for word, prob in predictions})
-    
     predict_button = gr.Button("Vorhersage")
-    predict_button.click(predict_next, inputs=[prompt], outputs=[prediction_output])
-    
-    def continue_text(prompt):
-        next_word = predict_single_word(prompt)[0][0]
-        prompt.update(value=f"{prompt.value} {next_word}")
-        predict_next(prompt.value)
+    predict_button.click(app.predict_next, inputs=[prompt], outputs=[prediction_output])
     
     continue_button = gr.Button("Weiter")
-    continue_button.click(continue_text, inputs=[prompt], outputs=[prompt, prediction_output])
-    
-    auto_mode = False
-    
-    def auto_predict(prompt):
-        nonlocal auto_mode
-        auto_mode = True
-        while auto_mode:
-            continue_text(prompt)
-            time.sleep(1)  # Kleine Verzögerung zwischen den Vorhersagen
-    
-    def stop_auto_predict():
-        nonlocal auto_mode
-        auto_mode = False
+    continue_button.click(app.continue_text, inputs=[prompt], outputs=[prompt, prediction_output])
     
     auto_button = gr.Button("Auto")
-    auto_button.click(auto_predict, inputs=[prompt], outputs=[prompt, prediction_output])
+    auto_button.click(app.auto_predict, inputs=[prompt], outputs=[prompt, prediction_output])
     
     stop_button = gr.Button("Stopp")
-    stop_button.click(stop_auto_predict)
-    
-    def reset_text():
-        prompt.update(value="")
-        prediction_output.update(value="")
+    stop_button.click(app.stop_auto_predict)
     
     reset_button = gr.Button("Reset")
-    reset_button.click(reset_text)
+    reset_button.click(app.reset_text, outputs=[prompt, prediction_output])
     
     demo.launch()
