@@ -100,18 +100,15 @@ def predict_with_beam_search(text, beam_width=3):
 def sequence_to_text(seq):
     return ' '.join([tokenizer.index_word[i] for i in seq if i > 0])
 
-# Gradio-Interface
-model = tf.keras.models.load_model('lstm_model.keras')
-
 # Funktion zur Vorhersage mit Beam Search
 def predict(text):
     predictions, probabilities = predict_with_beam_search(text, beam_width=3)
-    choices = [(f"{word} ({prob:.2f})", word) for word, prob in zip(predictions, probabilities)]
-    return gr.Dropdown.update(choices=choices, value=None)
+    choices = [f"{word} ({prob:.2f})" for word, prob in zip(predictions, probabilities)]
+    return gr.Dropdown.update(choices=choices)
 
 # Funktion zur Auswahl des nächsten Wortes
 def next_word(text, choice):
-    return f"{text} {choice}"
+    return f"{text} {choice.split(' ')[0]}"
 
 # Automatische Vorhersagefunktion
 def auto_predict(text):
@@ -130,26 +127,21 @@ model = tf.keras.models.load_model('lstm_model.keras')
 
 def update_choices(text):
     choices = predict(text)
-    return gr.update(choices=choices)
+    return choices
 
 # Gradio-Komponenten erstellen
-textbox = gr.Textbox(lines=2, label="Text Prompt")
-predict_button = gr.Button("Predict")
-next_button = gr.Button("Next")
-auto_button = gr.Button("Auto")
-stop_button = gr.Button("Stop")
-word_choices = gr.Dropdown(label="Select Word")
-
-# Gradio-Interface erstellen
 with gr.Blocks() as interface:
-    text_input = gr.Row(textbox)
-    button_row = gr.Row([predict_button, next_button, auto_button, stop_button])
+    textbox = gr.Textbox(lines=2, label="Text Prompt")
+    predict_button = gr.Button("Predict")
+    next_button = gr.Button("Next")
+    auto_button = gr.Button("Auto")
+    stop_button = gr.Button("Stop")
     word_choices = gr.Dropdown(label="Select Word")
     text_output = gr.Textbox(label="Generated Text")
 
-    predict_button.click(fn=update_choices, inputs=text_input, outputs=word_choices)
+    predict_button.click(fn=update_choices, inputs=textbox, outputs=word_choices)
     next_button.click(fn=next_word, inputs=[textbox, word_choices], outputs=text_output)
-    auto_button.click(fn=auto_predict, inputs=text_input, outputs=text_output)
+    auto_button.click(fn=auto_predict, inputs=textbox, outputs=text_output)
     stop_button.click(fn=stop, inputs=None, outputs=text_output)
 
 # Interface starten
