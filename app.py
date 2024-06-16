@@ -9,8 +9,7 @@ import gradio as gr
 import time
 
 # Daten laden
-df = pd.read_csv('Articles.csv')
-print(df.columns)  # Überprüfen Sie die Spaltennamen
+df = pd.read_csv('path/to/10k_german_news_articles.csv')
 texts = df['Body'].dropna().tolist()  # Passen Sie den Spaltennamen an und entfernen Sie NaNs
 
 # Tokenisierung und Sequenzierung
@@ -45,6 +44,21 @@ model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accur
 # Modell trainieren
 model.fit(X, y, epochs=3, batch_size=32, verbose=1)
 
+# Modell speichern
+model.save('word_prediction_model.h5')
+
+# Tokenizer und Modell laden
+df = pd.read_csv('Articles.csv')
+texts = df['Body'].dropna().tolist()
+
+tokenizer = Tokenizer()
+tokenizer.fit_on_texts(texts)
+total_words = len(tokenizer.word_index) + 1
+
+max_sequence_len = max([len(tokenizer.texts_to_sequences([text])[0]) for text in texts])
+
+model = tf.keras.models.load_model('word_prediction_model.h5')
+
 # Funktion zur Wortvorhersage
 def predict_next_words(text, num_words=1):
     for _ in range(num_words):
@@ -56,7 +70,6 @@ def predict_next_words(text, num_words=1):
         text += " " + predicted_word
     return text
 
-# Gradio-Interface
 def predict_single_word(prompt):
     token_list = tokenizer.texts_to_sequences([prompt])[0]
     token_list = pad_sequences([token_list], maxlen=max_sequence_len-1, padding='pre')
