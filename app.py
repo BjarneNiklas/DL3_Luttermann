@@ -119,20 +119,41 @@ def auto_predict(text):
         text += " " + predict_with_beam_search(text, beam_width=3)[0][0]
     return text
 
+# Funktion zum Stoppen der automatischen Vorhersage
+def stop():
+    global auto_predicting
+    auto_predicting = False
+    return "Auto prediction stopped."
+
+# Gradio-Interface erstellen
+model = tf.keras.models.load_model('lstm_model.keras')
+
+def update_choices(text):
+    choices = predict(text)
+    return gr.update(choices=choices)
+
+# Gradio-Komponenten erstellen
+textbox = gr.Textbox(lines=2, label="Text Prompt")
+predict_button = gr.Button("Predict")
+next_button = gr.Button("Next")
+auto_button = gr.Button("Auto")
+stop_button = gr.Button("Stop")
+word_choices = gr.Dropdown(label="Select Word")
+
 # Gradio-Interface erstellen
 interface = gr.Interface(
-    fn=predict,
-    inputs=[gr.Textbox(lines=2, label="Text Prompt")],
-    outputs=[gr.Dropdown(label="Select Word")],
+    fn=update_choices,
+    inputs=[textbox],
+    outputs=[word_choices],
     title="Language Model mit LSTM und Beam Search",
     description="Geben Sie einen Text ein und das Modell sagt das nächste Wort voraus. Nutzen Sie Beam Search zur Verbesserung der Vorhersagequalität."
 )
 
 # Buttons und Funktionen hinzufügen
-interface.add_button("Predict", predict)
-interface.add_button("Next", next_word)
-interface.add_button("Auto", auto_predict)
-interface.add_button("Stop", None)
+predict_button.click(fn=predict, inputs=textbox, outputs=word_choices)
+next_button.click(fn=next_word, inputs=[textbox, word_choices], outputs=textbox)
+auto_button.click(fn=auto_predict, inputs=textbox, outputs=textbox)
+stop_button.click(fn=stop, inputs=None, outputs=textbox)
 
 # Interface starten
 interface.launch()
