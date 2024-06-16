@@ -4,7 +4,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Embedding, Dropout, BatchNormalization
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow.keras.callbacks import ReduceLROnPlateau
+from tensorflow.keras.callbacks import ReduceLROnPlateau, Callback
 import gradio as gr
 import PyPDF2
 
@@ -44,7 +44,7 @@ ys = tf.keras.utils.to_categorical(labels, num_classes=total_words)
 
 # Modell erstellen
 model = Sequential()
-model.add(Embedding(total_words, 100, input_length=max_sequence_len-1))
+model.add(Embedding(total_words, 100))
 model.add(LSTM(100, return_sequences=True))
 model.add(Dropout(0.2))
 model.add(BatchNormalization())
@@ -59,8 +59,16 @@ model.compile(loss='categorical_crossentropy', optimizer=tf.keras.optimizers.Ada
 # Lernrate dynamisch anpassen
 reduce_lr = ReduceLROnPlateau(monitor='loss', factor=0.2, patience=3, min_lr=0.001)
 
+# Callback zur Berechnung der Perplexity
+class PerplexityCallback(Callback):
+    def on_epoch_end(self, epoch, logs=None):
+        p = np.exp(logs['loss'])
+        print(f"Perplexity at epoch {epoch + 1}: {p:.4f}")
+
+perplexity_callback = PerplexityCallback()
+
 # Modell trainieren
-history = model.fit(xs, ys, epochs=3, batch_size=32, callbacks=[reduce_lr], verbose=1)
+history = model.fit(xs, ys, epochs=3, batch_size=32, callbacks=[reduce_lr, perplexity_callback], verbose=1)
 
 # Modell speichern
 model.save('lstm_model.h5')
@@ -96,7 +104,7 @@ def sequence_to_text(seq):
 model = tf.keras.models.load_model('lstm_model.h5')
 
 # Definition der Gradio-Komponenten
-input_text = gr.inputs.Textbox(lines=2, label="Text Prompt")
+input_text = gr.Textbox(lines=2, label="Text Prompt")
 predict_button = gr.Button(label="Predict")
 next_button = gr.Button(label="Next")
 auto_button = gr.Button(label="Auto")
@@ -136,5 +144,3 @@ interface.add_button("Stop", None)
 
 # Interface starten
 interface.launch()
-
-
