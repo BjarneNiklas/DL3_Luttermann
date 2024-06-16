@@ -8,7 +8,7 @@ from tensorflow.keras.layers import Embedding, LSTM, Dense
 import gradio as gr
 
 # Daten laden
-df = pd.read_csv('german_news_articles.csv')
+df = pd.read_csv('Articles.csv')
 texts = df['text'].tolist()
 
 # Tokenisierung und Sequenzierung
@@ -41,7 +41,7 @@ model.add(Dense(total_words, activation='softmax'))
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 # Modell trainieren
-model.fit(X, y, epochs=10, batch_size=32, verbose=1)
+model.fit(X, y, epochs=3, batch_size=32, verbose=1)
 
 # Funktion zur Wortvorhersage
 def predict_next_words(text, num_words=1):
