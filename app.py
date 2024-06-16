@@ -141,19 +141,16 @@ stop_button = gr.Button("Stop")
 word_choices = gr.Dropdown(label="Select Word")
 
 # Gradio-Interface erstellen
-interface = gr.Interface(
-    fn=update_choices,
-    inputs=[textbox],
-    outputs=[word_choices],
-    title="Language Model mit LSTM und Beam Search",
-    description="Geben Sie einen Text ein und das Modell sagt das nächste Wort voraus. Nutzen Sie Beam Search zur Verbesserung der Vorhersagequalität."
-)
+with gr.Blocks() as interface:
+    text_input = gr.Row(textbox)
+    button_row = gr.Row([predict_button, next_button, auto_button, stop_button])
+    word_choices = gr.Dropdown(label="Select Word")
+    text_output = gr.Textbox(label="Generated Text")
 
-# Buttons und Funktionen hinzufügen
-predict_button.click(fn=predict, inputs=textbox, outputs=word_choices)
-next_button.click(fn=next_word, inputs=[textbox, word_choices], outputs=textbox)
-auto_button.click(fn=auto_predict, inputs=textbox, outputs=textbox)
-stop_button.click(fn=stop, inputs=None, outputs=textbox)
+    predict_button.click(fn=update_choices, inputs=text_input, outputs=word_choices)
+    next_button.click(fn=next_word, inputs=[textbox, word_choices], outputs=text_output)
+    auto_button.click(fn=auto_predict, inputs=text_input, outputs=text_output)
+    stop_button.click(fn=stop, inputs=None, outputs=text_output)
 
 # Interface starten
 interface.launch()
