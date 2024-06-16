@@ -11,7 +11,7 @@ import time
 # Daten laden
 df = pd.read_csv('Articles.csv')
 print(df.columns)  # Überprüfen Sie die Spaltennamen
-texts = df['Body'].tolist()  # Passen Sie den Spaltennamen an
+texts = df['Body'].dropna().tolist()  # Passen Sie den Spaltennamen an und entfernen Sie NaNs
 
 # Tokenisierung und Sequenzierung
 tokenizer = Tokenizer()
@@ -52,7 +52,7 @@ def predict_next_words(text, num_words=1):
         token_list = pad_sequences([token_list], maxlen=max_sequence_len-1, padding='pre')
         predicted = model.predict(token_list, verbose=0)
         predicted_word_index = np.argmax(predicted, axis=1)[0]
-        predicted_word = tokenizer.index_word[predicted_word_index]
+        predicted_word = tokenizer.index_word.get(predicted_word_index, "")
         text += " " + predicted_word
     return text
 
@@ -62,7 +62,7 @@ def predict_single_word(prompt):
     token_list = pad_sequences([token_list], maxlen=max_sequence_len-1, padding='pre')
     predicted = model.predict(token_list, verbose=0)
     top_indices = np.argsort(predicted[0])[-5:][::-1]
-    top_words = [(tokenizer.index_word[i], predicted[0][i]) for i in top_indices]
+    top_words = [(tokenizer.index_word.get(i, ""), predicted[0][i]) for i in top_indices]
     return top_words
 
 def append_word(prompt, word):
