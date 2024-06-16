@@ -8,6 +8,15 @@ from tensorflow.keras.layers import Embedding, LSTM, Dense
 import gradio as gr
 import time
 
+# Daten laden
+df = pd.read_csv('Articles.csv')
+texts = df['Body'].dropna().tolist()  # Passen Sie den Spaltennamen an und entfernen Sie NaNs
+
+# Tokenisierung und Sequenzierung
+tokenizer = Tokenizer()
+tokenizer.fit_on_texts(texts)
+total_words = len(tokenizer.word_index) + 1
+
 input_sequences = []
 for line in texts:
     token_list = tokenizer.texts_to_sequences([line])[0]
@@ -35,19 +44,8 @@ model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accur
 # Modell trainieren
 model.fit(X, y, epochs=3, batch_size=32, verbose=1)
 
-# Modell speichern
+# Modell speichern und laden
 model.save('word_prediction_model.h5')
-
-# Tokenizer und Modell laden
-df = pd.read_csv('Articles.csv')
-texts = df['Body'].dropna().tolist()
-
-tokenizer = Tokenizer()
-tokenizer.fit_on_texts(texts)
-total_words = len(tokenizer.word_index) + 1
-
-max_sequence_len = max([len(tokenizer.texts_to_sequences([text])[0]) for text in texts])
-
 model = tf.keras.models.load_model('word_prediction_model.h5')
 
 # Funktion zur Wortvorhersage
