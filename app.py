@@ -11,7 +11,7 @@ import time
 # Daten laden
 df = pd.read_csv('Articles.csv')
 print(df.columns)  # Überprüfen Sie die Spaltennamen
-texts = df['article_text'].tolist()  # Passen Sie den Spaltennamen an
+texts = df['Body'].tolist()  # Passen Sie den Spaltennamen an
 
 # Tokenisierung und Sequenzierung
 tokenizer = Tokenizer()
