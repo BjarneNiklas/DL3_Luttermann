@@ -10,7 +10,8 @@ import time
 
 # Daten laden
 df = pd.read_csv('Articles.csv')
-texts = df['text'].tolist()
+print(df.columns)  # Überprüfen Sie die Spaltennamen
+texts = df['article_text'].tolist()  # Passen Sie den Spaltennamen an
 
 # Tokenisierung und Sequenzierung
 tokenizer = Tokenizer()
