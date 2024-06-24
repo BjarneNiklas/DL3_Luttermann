@@ -69,7 +69,97 @@ model.summary()
 # Train the model
 history = model.fit(X, y, epochs=100, batch_size=32, validation_split=0.1, verbose=1)
 
-# ... (rest of the code remains the same)
+# Functions for prediction and text generation
+def predict_next_word(text, num_words=5):
+    sequence = tokenizer.texts_to_sequences([text])[0]
+    sequence = pad_sequences([sequence], maxlen=max_sequence_length-1, padding='pre')
+    predicted = model.predict(sequence, verbose=0)[0]
+    top_n = np.argsort(predicted)[-num_words:][::-1]
+    return [(tokenizer.index_word[idx], predicted[idx]) for idx in top_n]
+
+def generate_text(seed_text, num_words=10):
+    generated_text = seed_text
+    for _ in range(num_words):
+        predictions = predict_next_word(generated_text)
+        next_word = predictions[0][0]
+        generated_text += " " + next_word
+    return generated_text
+
+# Gradio interface
+def predict(text):
+    predictions = predict_next_word(text)
+    return {word: float(prob) for word, prob in predictions}
+
+def append_word(text, word):
+    return text + " " + word
+
+def auto_generate(text, num_words=10):
+    return generate_text(text, num_words)
+
+def reset():
+    return "", "", None
+
+def plot_loss():
+    fig = px.line(
+        x=range(1, len(history.history['loss']) + 1),
+        y=[history.history['loss'], history.history['val_loss']],
+        labels={'x': 'Epoch', 'y': 'Loss'},
+        title='Training and Validation Loss'
+    )
+    return fig
+
+with gr.Blocks() as demo:
+    gr.Markdown("# Language Model Word Prediction")
+    
+    with gr.Row():
+        input_text = gr.Textbox(label="Input Text")
+        output_text = gr.Textbox(label="Generated Text")
+    
+    with gr.Row():
+        predict_btn = gr.Button("Predict")
+        continue_btn = gr.Button("Continue")
+        auto_btn = gr.Button("Auto")
+        stop_btn = gr.Button("Stop")
+        reset_btn = gr.Button("Reset")
+    
+    word_choices = gr.Label(label="Next Word Predictions")
+    loss_plot = gr.Plot(label="Training Loss")
+    
+    predict_btn.click(predict, inputs=input_text, outputs=word_choices)
+    continue_btn.click(append_word, inputs=[input_text, word_choices], outputs=input_text)
+    auto_btn.click(auto_generate, inputs=input_text, outputs=output_text)
+    reset_btn.click(reset, outputs=[input_text, output_text, word_choices])
+    gr.Button("Show Loss Plot").click(plot_loss, outputs=loss_plot)
+
+    gr.Markdown("""
+    ## Documentation
+    
+    This application uses a stacked LSTM model for next word prediction. The model architecture consists of:
+    - An embedding layer
+    - Two LSTM layers with 100 units each
+    - A dense output layer with softmax activation
+    
+    The model is trained on the provided dataset using categorical cross-entropy loss and the Adam optimizer.
+    
+    ## Discussion
+    
+    The current model demonstrates basic next word prediction capabilities. Areas for improvement include:
+    1. Fine-tuning hyperparameters (e.g., LSTM units, embedding dimension)
+    2. Experimenting with different model architectures
+    3. Implementing more sophisticated text preprocessing
+    4. Exploring techniques to prevent overfitting (e.g., dropout, regularization)
+    
+    ## User Guide
+    
+    1. Enter a seed text in the "Input Text" box.
+    2. Click "Predict" to see the top 5 predicted next words.
+    3. Click "Continue" to append the top predicted word.
+    4. Click "Auto" to generate 10 words automatically.
+    5. Use "Reset" to clear all inputs and outputs.
+    6. Click "Show Loss Plot" to visualize the training process.
+    
+    For any issues or questions, please contact support.
+    """)
 
 if __name__ == "__main__":
     demo.launch()
