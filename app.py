@@ -1,124 +1,153 @@
+import gradio as gr
+import tensorflow as tf
 import numpy as np
 import pandas as pd
-import tensorflow as tf
+import plotly.express as px
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense, Embedding
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Embedding, LSTM, Dense
-import gradio as gr
-import time
 
-# Daten laden
-df = pd.read_csv('Articles.csv')
-texts = df['Body'].dropna().tolist()  # Passen Sie den Spaltennamen an und entfernen Sie NaNs
+# Constants
+VOCAB_SIZE = 10000
+MAX_SEQUENCE_LENGTH = 30
+EMBEDDING_DIM = 100
+LSTM_UNITS = 100
 
-# Tokenisierung und Sequenzierung
-tokenizer = Tokenizer()
-tokenizer.fit_on_texts(texts)
+# Load and preprocess data
+def load_data(file_path):
+    # Load your data here. This is a placeholder.
+    data = pd.read_csv(file_path, encoding='utf-8')
+    return ' '.join(data['text'].astype(str))
+
+text = load_data('Articles.csv')  # Replace with your actual data file
+
+# Tokenize the text
+tokenizer = Tokenizer(num_words=VOCAB_SIZE, oov_token="<OOV>")
+tokenizer.fit_on_texts([text])
 total_words = len(tokenizer.word_index) + 1
 
+# Create input sequences
 input_sequences = []
-for line in texts:
+for line in text.split('\n'):
     token_list = tokenizer.texts_to_sequences([line])[0]
     for i in range(1, len(token_list)):
         n_gram_sequence = token_list[:i+1]
         input_sequences.append(n_gram_sequence)
 
-# Padding der Sequenzen
-max_sequence_len = max([len(x) for x in input_sequences])
-input_sequences = np.array(pad_sequences(input_sequences, maxlen=max_sequence_len, padding='pre'))
+# Pad sequences
+max_sequence_length = max([len(x) for x in input_sequences])
+input_sequences = pad_sequences(input_sequences, maxlen=max_sequence_length, padding='pre')
 
-# Features und Labels erstellen
-X = input_sequences[:,:-1]
-y = input_sequences[:,-1]
+# Create predictors and label
+X, y = input_sequences[:, :-1], input_sequences[:, -1]
 y = tf.keras.utils.to_categorical(y, num_classes=total_words)
 
-# Modell erstellen
-model = Sequential()
-model.add(Embedding(total_words, 100, input_length=max_sequence_len-1))
-model.add(LSTM(100, return_sequences=True))
-model.add(LSTM(100))
-model.add(Dense(total_words, activation='softmax'))
+# Define the model
+model = Sequential([
+    Embedding(total_words, EMBEDDING_DIM, input_length=max_sequence_length-1),
+    LSTM(LSTM_UNITS, return_sequences=True),
+    LSTM(LSTM_UNITS),
+    Dense(total_words, activation='softmax')
+])
+
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+model.summary()
 
-# Modell trainieren
-model.fit(X, y, epochs=1, batch_size=32, verbose=1)
+# Train the model
+history = model.fit(X, y, epochs=100, batch_size=32, validation_split=0.1, verbose=1)
 
-# Modell speichern und laden
-model.save('word_prediction_model.h5')
-model = tf.keras.models.load_model('word_prediction_model.h5')
+# Functions for prediction and text generation
+def predict_next_word(text, num_words=5):
+    sequence = tokenizer.texts_to_sequences([text])[0]
+    sequence = pad_sequences([sequence], maxlen=max_sequence_length-1, padding='pre')
+    predicted = model.predict(sequence, verbose=0)[0]
+    top_n = np.argsort(predicted)[-num_words:][::-1]
+    return [(tokenizer.index_word[idx], predicted[idx]) for idx in top_n]
 
-# Funktion zur Wortvorhersage
-def predict_next_words(text, num_words=1):
+def generate_text(seed_text, num_words=10):
+    generated_text = seed_text
     for _ in range(num_words):
-        token_list = tokenizer.texts_to_sequences([text])[0]
-        token_list = pad_sequences([token_list], maxlen=max_sequence_len-1, padding='pre')
-        predicted = model.predict(token_list, verbose=0)
-        predicted_word_index = np.argmax(predicted, axis=1)[0]
-        predicted_word = tokenizer.index_word.get(predicted_word_index, "")
-        text += " " + predicted_word
-    return text
+        predictions = predict_next_word(generated_text)
+        next_word = predictions[0][0]
+        generated_text += " " + next_word
+    return generated_text
 
-def predict_single_word(prompt):
-    token_list = tokenizer.texts_to_sequences([prompt])[0]
-    token_list = pad_sequences([token_list], maxlen=max_sequence_len-1, padding='pre')
-    predicted = model.predict(token_list, verbose=0)
-    top_indices = np.argsort(predicted[0])[-5:][::-1]
-    top_words = [(tokenizer.index_word.get(i, ""), predicted[0][i]) for i in top_indices]
-    return top_words
+# Gradio interface
+def predict(text):
+    predictions = predict_next_word(text)
+    return {word: float(prob) for word, prob in predictions}
 
-def append_word(prompt, word):
-    return f"{prompt} {word}"
+def append_word(text, word):
+    return text + " " + word
 
-def generate_text(prompt, num_words):
-    return predict_next_words(prompt, num_words)
+def auto_generate(text, num_words=10):
+    return generate_text(text, num_words)
 
-class GradioApp:
-    def __init__(self):
-        self.auto_mode = False
+def reset():
+    return "", "", None
 
-    def predict_next(self, prompt):
-        predictions = predict_single_word(prompt)
-        return {word: f"{prob:.2f}" for word, prob in predictions}
-
-    def continue_text(self, prompt):
-        next_word = predict_single_word(prompt)[0][0]
-        new_prompt = f"{prompt} {next_word}"
-        predictions = self.predict_next(new_prompt)
-        return new_prompt, predictions
-
-    def auto_predict(self, prompt):
-        self.auto_mode = True
-        while self.auto_mode:
-            prompt, predictions = self.continue_text(prompt)
-            time.sleep(1)
-        return prompt, predictions
-
-    def stop_auto_predict(self):
-        self.auto_mode = False
-
-    def reset_text(self):
-        return "", ""
-
-app = GradioApp()
+def plot_loss():
+    fig = px.line(
+        x=range(1, len(history.history['loss']) + 1),
+        y=[history.history['loss'], history.history['val_loss']],
+        labels={'x': 'Epoch', 'y': 'Loss'},
+        title='Training and Validation Loss'
+    )
+    return fig
 
 with gr.Blocks() as demo:
-    prompt = gr.Textbox(label="Eingabe", placeholder="Geben Sie Ihren Text ein...")
-    prediction_output = gr.Label(label="Vorhersagen")
+    gr.Markdown("# Language Model Word Prediction")
     
-    predict_button = gr.Button("Vorhersage")
-    predict_button.click(app.predict_next, inputs=[prompt], outputs=[prediction_output])
+    with gr.Row():
+        input_text = gr.Textbox(label="Input Text")
+        output_text = gr.Textbox(label="Generated Text")
     
-    continue_button = gr.Button("Weiter")
-    continue_button.click(app.continue_text, inputs=[prompt], outputs=[prompt, prediction_output])
+    with gr.Row():
+        predict_btn = gr.Button("Predict")
+        continue_btn = gr.Button("Continue")
+        auto_btn = gr.Button("Auto")
+        stop_btn = gr.Button("Stop")
+        reset_btn = gr.Button("Reset")
     
-    auto_button = gr.Button("Auto")
-    auto_button.click(app.auto_predict, inputs=[prompt], outputs=[prompt, prediction_output])
+    word_choices = gr.Label(label="Next Word Predictions")
+    loss_plot = gr.Plot(label="Training Loss")
     
-    stop_button = gr.Button("Stopp")
-    stop_button.click(app.stop_auto_predict)
+    predict_btn.click(predict, inputs=input_text, outputs=word_choices)
+    continue_btn.click(append_word, inputs=[input_text, word_choices], outputs=input_text)
+    auto_btn.click(auto_generate, inputs=input_text, outputs=output_text)
+    reset_btn.click(reset, outputs=[input_text, output_text, word_choices])
+    gr.Button("Show Loss Plot").click(plot_loss, outputs=loss_plot)
+
+    gr.Markdown("""
+    ## Documentation
     
-    reset_button = gr.Button("Reset")
-    reset_button.click(app.reset_text, outputs=[prompt, prediction_output])
+    This application uses a stacked LSTM model for next word prediction. The model architecture consists of:
+    - An embedding layer
+    - Two LSTM layers with 100 units each
+    - A dense output layer with softmax activation
     
+    The model is trained on the provided dataset using categorical cross-entropy loss and the Adam optimizer.
+    
+    ## Discussion
+    
+    The current model demonstrates basic next word prediction capabilities. Areas for improvement include:
+    1. Fine-tuning hyperparameters (e.g., LSTM units, embedding dimension)
+    2. Experimenting with different model architectures
+    3. Implementing more sophisticated text preprocessing
+    4. Exploring techniques to prevent overfitting (e.g., dropout, regularization)
+    
+    ## User Guide
+    
+    1. Enter a seed text in the "Input Text" box.
+    2. Click "Predict" to see the top 5 predicted next words.
+    3. Click "Continue" to append the top predicted word.
+    4. Click "Auto" to generate 10 words automatically.
+    5. Use "Reset" to clear all inputs and outputs.
+    6. Click "Show Loss Plot" to visualize the training process.
+    
+    For any issues or questions, please contact support.
+    """)
+
+if __name__ == "__main__":
     demo.launch()
