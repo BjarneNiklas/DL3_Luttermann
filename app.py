@@ -15,7 +15,7 @@ EMBEDDING_DIM = 100
 LSTM_UNITS = 100
 
 # Load and preprocess data
-def load_data(file_path):
+def load_data(file_path):abcd
     data = pd.read_csv(file_path, encoding='utf-8')
     
     # Print column names to help identify the correct column
