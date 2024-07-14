@@ -23,23 +23,24 @@ def clean_text(text):
 input_paths = {
     'colab': '/content/Corpus.txt',
     'kaggle': '/kaggle/input/corpus/Corpus.txt',
-    'hugface': 'Corpus.txt'
+    'hugface': 'output/Corpus.txt'
 }
 output_paths = {
     'colab': '/content/Corpus-cleaned.txt',
     'kaggle': '/kaggle/working/Corpus-cleaned.txt',
-    'hugface': 'Corpus-cleaned.txt'
+    'hugface': 'output/Corpus-cleaned.txt'
 }
 model_paths = {
     'colab': '/content/word_prediction_model.keras',
     'kaggle': '/kaggle/working/word_prediction_model.keras',
-    'hugface': 'word_prediction_model.keras'
+    'hugface': 'output/word_prediction_model.keras'
 }
 tokenizer_paths = {
     'colab': '/content/tokenizer.pickle',
     'kaggle': '/kaggle/working/tokenizer.pickle',
-    'hugface': 'tokenizer.pickle'
+    'hugface': 'output/tokenizer.pickle'
 }
+
 
 # Determine the current environment
 def get_current_environment():
