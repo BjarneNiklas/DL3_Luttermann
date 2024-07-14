@@ -1,149 +1,176 @@
-import gradio as gr
-import tensorflow as tf
+import os
+import re
+import pickle
 import numpy as np
-import pandas as pd
-import plotly.express as px
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Embedding
+import tensorflow as tf
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
+import gradio as gr
 import time
 
-# Constants
-VOCAB_SIZE = 10000
-MAX_SEQUENCE_LENGTH = 30
-EMBEDDING_DIM = 100
-LSTM_UNITS = 100
-AUTO_GENERATE_INTERVAL = 0.2  # Interval for auto-generation in seconds
+# Funktion zur Bereinigung des Textes
+def clean_text(text):
+    text = re.sub(r'\([^)]*\)', '', text)
+    text = re.sub(r'\[[^]]*\]', '', text)
+    text = re.sub(r'\d+', '', text)
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text
 
-# Load and preprocess data
-def load_data(file_path):
-    with open(file_path, 'r', encoding='utf-8') as file:
-        return file.read()
+# Pfade für Dateien
+input_path_primary = '/content/Corpus.txt'  # Google Colab
+input_path_secondary = '/kaggle/input/corpus/Corpus.txt'  # Kaggle
+input_path_tertiary = 'LM_LSTM/Corpus.txt'  # Hugging Face
+output_path_primary = '/content/Corpus-cleaned.txt'
+output_path_secondary = '/kaggle/working/Corpus-cleaned.txt'
+output_path_tertiary = 'LM_LSTM/Corpus-cleaned.txt'
+model_path_primary = '/content/word_prediction_model.keras'
+model_path_secondary = '/kaggle/working/word_prediction_model.keras'
+model_path_tertiary = 'LM_LSTM/word_prediction_model.keras'
+tokenizer_path_primary = '/content/tokenizer.pickle'
+tokenizer_path_secondary = '/kaggle/working/tokenizer.pickle'
+tokenizer_path_tertiary = 'LM_LSTM/tokenizer.pickle'
 
-# Load the data
-text = load_data('Corpus.txt')
+# Bereinigung und Speicherung des Textes
+if not os.path.exists(output_path_primary):
+    input_path = input_path_primary
+    if os.path.exists(input_path_secondary):
+        input_path = input_path_secondary
+    elif os.path.exists(input_path_tertiary):
+        input_path = input_path_tertiary
+        
+    with open(input_path, 'r', encoding='utf-8') as file:
+        text = file.read()
+    cleaned_text = clean_text(text)
+    with open(output_path_primary, 'w', encoding='utf-8') as file:
+        file.write(cleaned_text)
 
-# Tokenize the text
-tokenizer = Tokenizer(num_words=VOCAB_SIZE, oov_token="<OOV>")
-tokenizer.fit_on_texts([text])
-total_words = len(tokenizer.word_index) + 1
+# Modelltraining oder Laden des Modells
+def load_model_and_tokenizer():
+    if os.path.exists(model_path_primary) and os.path.exists(tokenizer_path_primary):
+        model = tf.keras.models.load_model(model_path_primary)
+        with open(tokenizer_path_primary, 'rb') as handle:
+            tokenizer = pickle.load(handle)
+    elif os.path.exists(model_path_secondary) and os.path.exists(tokenizer_path_secondary):
+        model = tf.keras.models.load_model(model_path_secondary)
+        with open(tokenizer_path_secondary, 'rb') as handle:
+            tokenizer = pickle.load(handle)
+    elif os.path.exists(model_path_tertiary) and os.path.exists(tokenizer_path_tertiary):
+        model = tf.keras.models.load_model(model_path_tertiary)
+        with open(tokenizer_path_tertiary, 'rb') as handle:
+            tokenizer = pickle.load(handle)
+    else:
+        return None, None
 
-# Create input sequences
-input_sequences = []
-for line in text.split('\n'):
-    token_list = tokenizer.texts_to_sequences([line])[0]
-    for i in range(1, len(token_list)):
-        n_gram_sequence = token_list[:i+1]
-        input_sequences.append(n_gram_sequence)
+    return model, tokenizer
 
-# Pad sequences
-max_sequence_length = max([len(x) for x in input_sequences])
-input_sequences = pad_sequences(input_sequences, maxlen=max_sequence_length, padding='pre')
+model, tokenizer = load_model_and_tokenizer()
 
-# Create predictors and label
-X, y = input_sequences[:, :-1], input_sequences[:, -1]
-y = tf.keras.utils.to_categorical(y, num_classes=total_words)
+if model is None or tokenizer is None:
+    with open(output_path_primary, 'r', encoding='utf-8') as file:
+        cleaned_text = file.read()
 
-# Define the model
-model = Sequential([
-    Embedding(total_words, EMBEDDING_DIM, input_length=max_sequence_length-1),
-    LSTM(LSTM_UNITS, return_sequences=True),
-    LSTM(LSTM_UNITS),
-    Dense(total_words, activation='softmax')
-])
+    tokenizer = Tokenizer()
+    tokenizer.fit_on_texts([cleaned_text])
+    total_words = len(tokenizer.word_index) + 1
+    input_sequences = []
 
-model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    for line in cleaned_text.split('.'):
+        token_list = tokenizer.texts_to_sequences([line])[0]
+        for i in range(1, len(token_list)):
+            n_gram_sequence = token_list[:i + 1]
+            input_sequences.append(n_gram_sequence)
 
-# Train the model (consider removing this if already trained)
-# history = model.fit(X, y, epochs=100, batch_size=32, validation_split=0.1, verbose=1)
+    max_sequence_len = max([len(x) for x in input_sequences])
+    input_sequences = np.array(pad_sequences(input_sequences, maxlen=max_sequence_len, padding='pre'))
 
-# Functions for prediction and text generation
-def predict_next_word(text, num_words=5):
-    sequence = tokenizer.texts_to_sequences([text])[0]
-    sequence = pad_sequences([sequence], maxlen=max_sequence_length-1, padding='pre')
-    predicted = model.predict(sequence, verbose=0)[0]
-    top_n = np.argsort(predicted)[-num_words:][::-1]
-    return [(tokenizer.index_word[idx], predicted[idx]) for idx in top_n]
+    X, y = input_sequences[:, :-1], input_sequences[:, -1]
+    y = tf.keras.utils.to_categorical(y, num_classes=total_words)
 
-def generate_text(seed_text, num_words=10):
-    generated_text = seed_text
-    for _ in range(num_words):
-        predictions = predict_next_word(generated_text)
-        next_word = predictions[0][0]
-        generated_text += " " + next_word
-        time.sleep(AUTO_GENERATE_INTERVAL)  # Pause for auto generation
+    model = tf.keras.Sequential([
+        tf.keras.layers.Embedding(total_words, 100, input_length=max_sequence_len - 1),
+        tf.keras.layers.LSTM(100, return_sequences=True),
+        tf.keras.layers.LSTM(100),
+        tf.keras.layers.Dense(total_words, activation='softmax')
+    ])
+
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    model.fit(X, y, epochs=10, batch_size=32)
+
+    model.save(model_path_primary)
+    with open(tokenizer_path_primary, 'wb') as handle:
+        pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+# Funktion zur Vorhersage des nächsten Wortes
+def predict_next_words(prompt, top_k=5):
+    tokens = tokenizer.texts_to_sequences([prompt])
+    padded_seq = pad_sequences(tokens, maxlen=model.input_shape[1] - 1, padding='pre')
+    predictions = model.predict(padded_seq)
+    top_indices = np.argsort(predictions[0])[-top_k:][::-1]
+    top_words = [(tokenizer.index_word.get(i, ''), predictions[0][i]) for i in top_indices]
+    return top_words
+
+# Berechnung der Genauigkeit
+def calculate_accuracy(predictions, actual_word):
+    correct_predictions = [word for word, _ in predictions if word == actual_word]
+    accuracy = len(correct_predictions) / len(predictions) * 100 if predictions else 0
+    return accuracy
+
+# Gradio-Interface
+def auto_generate(prompt, auto):
+    generated_text = prompt
+    for _ in range(10):  # Generiere 10 Wörter
+        top_words = predict_next_words(generated_text)
+        next_word = top_words[0][0]  # Das wahrscheinlichste Wort
+        generated_text += ' ' + next_word
+        time.sleep(0.2)  # Pause für 0,2 Sekunden
     return generated_text
 
-# Gradio interface
-def predict(text):
-    predictions = predict_next_word(text)
-    return {word: float(prob) for word, prob in predictions}
-
-def append_word(text, word):
-    return text + " " + word
-
-def auto_generate(text, num_words=10):
-    return generate_text(text, num_words)
-
-def reset():
-    return "", "", None
-
-def plot_loss():
-    fig = px.line(
-        x=range(1, len(history.history['loss']) + 1),
-        y=[history.history['loss'], history.history['val_loss']],
-        labels={'x': 'Epoch', 'y': 'Loss'},
-        title='Training and Validation Loss'
-    )
-    return fig
-
-# Gradio UI
 with gr.Blocks() as demo:
-    gr.Markdown("# Language Model Word Prediction")
+    gr.Markdown("## LSTM-basierte Wortvorhersage")
+
+    input_text = gr.Textbox(label="Eingabetext")
+    prediction_button = gr.Button("Vorhersage")
+    top_words = gr.Dataframe(headers=["Wort", "Wahrscheinlichkeit"], datatype=["str", "number"], interactive=False)
     
-    with gr.Row():
-        input_text = gr.Textbox(label="Input Text")
-        output_text = gr.Textbox(label="Generated Text")
-    
-    with gr.Row():
-        predict_btn = gr.Button("Predict")
-        continue_btn = gr.Button("Continue")
-        auto_btn = gr.Button("Auto")
-        reset_btn = gr.Button("Reset")
-    
-    word_choices = gr.Label(label="Next Word Predictions")
-    
-    predict_btn.click(predict, inputs=input_text, outputs=word_choices)
-    continue_btn.click(append_word, inputs=[input_text, word_choices], outputs=input_text)
-    auto_btn.click(auto_generate, inputs=input_text, outputs=output_text)
-    reset_btn.click(reset, outputs=[input_text, output_text, word_choices])
+    prediction_button.click(fn=predict_next_words, inputs=input_text, outputs=top_words)
+
+    accuracy_output = gr.Textbox(label="Vorhersage Genauigkeit (%)", interactive=False)
+
+    def get_accuracy(prompt):
+        actual_word = prompt.split()[-1] if prompt else ''
+        predictions = predict_next_words(prompt)
+        accuracy = calculate_accuracy(predictions, actual_word)
+        return accuracy
+
+    auto_generate_checkbox = gr.Checkbox(label="Automatische Generierung aktivieren", value=False)
+    auto_generate_button = gr.Button("Generiere Text")
+    generated_text_output = gr.Textbox(label="Generierter Text", interactive=False)
+
+    auto_generate_button.click(fn=auto_generate, inputs=(input_text, auto_generate_checkbox), outputs=generated_text_output)
 
     gr.Markdown("""
-    ## Documentation
+    ## Dokumentation
     
-    This application uses a stacked LSTM model for next word prediction. The model architecture consists of:
-    - An embedding layer
-    - Two LSTM layers with 100 units each
-    - A dense output layer with softmax activation
+    Diese Anwendung verwendet ein gestapeltes LSTM-Modell zur Wortvorhersage. Die Architektur des Modells besteht aus:
+    - Einer Embedding-Schicht
+    - Zwei LSTM-Schichten mit jeweils 100 Einheiten
+    - Einer dichten Ausgabeschicht mit Softmax-Aktivierung
+
+    Das Modell wird auf dem bereitgestellten Datensatz mit dem Verlust von kategorischer Kreuzentropie und dem Adam-Optimizer trainiert.
     
-    The model is trained on the provided dataset using categorical cross-entropy loss and the Adam optimizer.
+    ## Diskussion
     
-    ## Discussion
+    Das aktuelle Modell zeigt grundlegende Fähigkeiten zur Wortvorhersage. Bereiche zur Verbesserung umfassen:
+    1. Feineinstellung der Hyperparameter (z.B. LSTM-Einheiten, Embedding-Dimension).
+    2. Experimentieren mit verschiedenen Modellarchitekturen.
+    3. Implementierung ausgefeilterer Textvorverarbeitung.
+    4. Erforschung von Techniken zur Vermeidung von Überanpassung (z.B. Dropout, Regularisierung).
     
-    The current model demonstrates basic next word prediction capabilities. Areas for improvement include:
-    1. Fine-tuning hyperparameters (e.g., LSTM units, embedding dimension)
-    2. Experimenting with different model architectures
-    3. Implementing more sophisticated text preprocessing
-    4. Exploring techniques to prevent overfitting (e.g., dropout, regularization)
+    ## Benutzeranleitung
     
-    ## User Guide
-    
-    1. Enter a seed text in the "Input Text" box.
-    2. Click "Predict" to see the top 5 predicted next words.
-    3. Click "Continue" to append the top predicted word.
-    4. Click "Auto" to generate 10 words automatically every 0.2 seconds.
-    5. Use "Reset" to clear all inputs and outputs.
+    1. Geben Sie einen Starttext in das Feld "Eingabetext" ein.
+    2. Klicken Sie auf "Vorhersage", um die 5 wahrscheinlichsten nächsten Wörter anzuzeigen.
+    3. Aktivieren Sie das Kontrollkästchen "Automatische Generierung", um 10 Wörter automatisch zu generieren.
     """)
 
 if __name__ == "__main__":
