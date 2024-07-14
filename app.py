@@ -118,8 +118,13 @@ def calculate_accuracy(predictions, actual_word):
 # Automatische Textgenerierung
 def auto_generate(prompt, auto):
     generated_text = prompt
-    for _ in range(10):  # Generiere 10 Wörter
-        if auto:
+    if not auto:
+        for _ in range(10):  # Generiere 10 Wörter
+            top_words = predict_next_words(generated_text)
+            next_word = top_words[0][0]  # Wahrscheinlichstes Wort
+            generated_text += ' ' + next_word
+    else:
+        for _ in range(10):  # Generiere 10 Wörter mit Pause
             top_words = predict_next_words(generated_text)
             next_word = top_words[0][0]  # Wahrscheinlichstes Wort
             generated_text += ' ' + next_word
@@ -148,8 +153,7 @@ with gr.Blocks() as demo:
 
     auto_generate_checkbox = gr.Checkbox(label="Automatische Generierung alle 0,2 Sekunden", value=False)
     auto_generate_button = gr.Button("Generiere Text")
-    generated_text_output = gr.Textbox(label="Generierter Text", interactive=False)
 
-    auto_generate_button.click(fn=auto_generate, inputs=[input_text, auto_generate_checkbox], outputs=generated_text_output)
+    auto_generate_button.click(fn=auto_generate, inputs=[input_text, auto_generate_checkbox], outputs=input_text)
 
 demo.launch()
