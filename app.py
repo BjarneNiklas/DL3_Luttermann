@@ -18,6 +18,7 @@ def clean_text(text):
     text = text.replace('daß', 'dass').replace('muß', 'muss').replace('müßte', 'müsste').replace('dürfte', 'dürfte').replace('müßte', 'müsste')
     return text
 
+
 # Paths for files
 input_paths = {
     'colab': '/content/Corpus.txt',
