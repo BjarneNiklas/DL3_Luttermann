@@ -15,7 +15,7 @@ def clean_text(text):
     text = re.sub(r'\[[^]]*\]', '', text)
     text = re.sub(r'\d+', '', text)
     text = re.sub(r'\s+', ' ', text).strip()
-    text = text.replace('daß', 'dass').replace('muß', 'muss').replace('müßte', 'müsste').replace('dürfte', 'dürfte').replace('müßte', 'müsste')
+    text = text.replace('daß', 'dass').replace('muß', 'muss').replace('müßte', 'müsste').replace('müßte', 'müsste')
     return text
 
 
@@ -197,14 +197,13 @@ model, tokenizer = load_model_and_tokenizer()
 with gr.Blocks() as demo:
     gr.Markdown("## LSTM-based Word Prediction")
 
+    input_text = gr.Textbox(label="Gib einen beliebigen Text ein:", interactive=True)
+    
     probabilities = gr.Dataframe(
-        label="Gib einen beliebigen Text ein",
         headers=["Wähle nächstes Wort aus"],
         datatype=["str"],
         col_count=1
     )
-
-    input_text = gr.Textbox(label="Input Text", interactive=True)
 
     predict_button = gr.Button("Vorhersage")
     next_button = gr.Button("Weiter")
