@@ -1,4 +1,3 @@
-
 import os
 import re
 import pickle
@@ -59,29 +58,42 @@ tokenizer_path = tokenizer_paths[current_env]
 
 # Preparing data
 def prepare_data():
+    print(f"Preparing data from: {input_path}")
     if not os.path.exists(output_path):
         with open(input_path, 'r', encoding='utf-8') as file:
             text = file.read()
         cleaned_text = clean_text(text)
         with open(output_path, 'w', encoding='utf-8') as file:
             file.write(cleaned_text)
+    print(f"Data prepared and saved to: {output_path}")
 
 # Load model and tokenizer
 def load_model_and_tokenizer():
+    print(f"Loading model from: {model_path}")
+    print(f"Loading tokenizer from: {tokenizer_path}")
     model = None
     tokenizer = None
     if os.path.exists(model_path) and os.path.exists(tokenizer_path):
         model = tf.keras.models.load_model(model_path)
         with open(tokenizer_path, 'rb') as handle:
             tokenizer = pickle.load(handle)
+        print("Model and tokenizer loaded successfully.")
     else:
         raise FileNotFoundError("Model or tokenizer file not found.")
     return model, tokenizer
 
+# Calculate perplexity
+def calculate_perplexity(predictions):
+    log_predictions = np.log(predictions + 1e-8)
+    perplexity = np.exp(-np.mean(log_predictions))
+    return perplexity
+
 # Predict next words with temperature sampling
 def predict_next_words(prompt, top_k=5, temperature=1.0):
+    print(f"Predicting next words for prompt: {prompt}")
     tokens = tokenizer.texts_to_sequences([prompt])
     padded_seq = pad_sequences(tokens, maxlen=model.input_shape[1] - 1, padding='pre')
+    print(f"Padded sequence: {padded_seq}")
     predictions = model.predict(padded_seq)[0]
     predictions = np.asarray(predictions).astype('float64')
     predictions = np.log(predictions + 1e-8) / temperature
@@ -89,20 +101,27 @@ def predict_next_words(prompt, top_k=5, temperature=1.0):
     predictions = exp_predictions / np.sum(exp_predictions)
     top_indices = np.argsort(predictions)[-top_k:]
     next_word_idx = np.random.choice(top_indices, p=predictions[top_indices])
-    return tokenizer.index_word[next_word_idx], predictions[next_word_idx]
+    next_word = tokenizer.index_word[next_word_idx]
+    perplexity = calculate_perplexity(predictions)
+    print(f"Next word: {next_word}, Perplexity: {perplexity}")
+    return next_word, perplexity
 
 # Gradio interface
 def auto_generate(prompt, auto):
     generated_text = prompt
+    perplexities = []
     if not auto:
         for _ in range(10):
-            next_word, _ = predict_next_words(generated_text)
+            next_word, perplexity = predict_next_words(generated_text)
             generated_text += ' ' + next_word
+            perplexities.append(perplexity)
     else:
         for _ in range(10):
-            next_word, _ = predict_next_words(generated_text)
+            next_word, perplexity = predict_next_words(generated_text)
             generated_text += ' ' + next_word
+            perplexities.append(perplexity)
             time.sleep(0.2)  # Generate every 0.2 seconds
+    print(f"Generated text: {generated_text}")
     return generated_text
 
 # Gradio Blocks Interface
@@ -122,11 +141,11 @@ with gr.Blocks() as demo:
 
     # Define the functions for new buttons
     def predict_text(prompt):
-        next_word, _ = predict_next_words(prompt)
+        next_word, perplexity = predict_next_words(prompt)
         return prompt + ' ' + next_word
 
     def append_next_word(prompt):
-        next_word, _ = predict_next_words(prompt)
+        next_word, perplexity = predict_next_words(prompt)
         return prompt + ' ' + next_word
 
     def reset_text():
