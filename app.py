@@ -1,3 +1,4 @@
+
 import os
 import re
 import pickle
@@ -7,8 +8,11 @@ from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import gradio as gr
 import time
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Embedding, LSTM, Dense, Dropout
+from tensorflow.keras.optimizers import Adam
 
-# Funktion zur Bereinigung des Textes
+# Function to clean text
 def clean_text(text):
     text = re.sub(r'\([^)]*\)', '', text)
     text = re.sub(r'\[[^]]*\]', '', text)
@@ -16,55 +20,78 @@ def clean_text(text):
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
-# Pfade für Dateien
-input_path_ggcolab = '/content/Corpus.txt'
-input_path_kaggle = '/kaggle/input/corpus/Corpus.txt'
-input_path_hugface = 'LM_LSTM/Corpus.txt'
-output_path_ggcolab = '/content/Corpus-cleaned.txt'
-output_path_kaggle = '/kaggle/working/Corpus-cleaned.txt'
-output_path_hugface = 'LM_LSTM/Corpus-cleaned.txt'
-model_path_ggcolab = '/content/word_prediction_model.keras'
-model_path_kaggle = '/kaggle/working/word_prediction_model.keras'
-tokenizer_path_ggcolab = '/content/tokenizer.pickle'
-tokenizer_path_kaggle = '/kaggle/working/tokenizer.pickle'
+# Paths for files
+input_paths = {
+    'colab': '/content/Corpus.txt',
+    'kaggle': '/kaggle/input/corpus/Corpus.txt',
+    'hugface': 'LM_LSTM/Corpus.txt'
+}
+output_paths = {
+    'colab': '/content/Corpus-cleaned.txt',
+    'kaggle': '/kaggle/working/Corpus-cleaned.txt',
+    'hugface': 'LM_LSTM/Corpus-cleaned.txt'
+}
+model_paths = {
+    'colab': '/content/word_prediction_model.keras',
+    'kaggle': '/kaggle/working/word_prediction_model.keras',
+    'hugface': 'LM_LSTM/word_prediction_model.keras'
+}
+tokenizer_paths = {
+    'colab': '/content/tokenizer.pickle',
+    'kaggle': '/kaggle/working/tokenizer.pickle',
+    'hugface': 'LM_LSTM/tokenizer.pickle'
+}
 
-# Bereinigung und Speicherung des Textes
+# Determine the current environment
+def get_current_environment():
+    if os.path.exists('/content'):
+        return 'colab'
+    elif os.path.exists('/kaggle'):
+        return 'kaggle'
+    else:
+        return 'hugface'
+
+current_env = get_current_environment()
+input_path = input_paths[current_env]
+output_path = output_paths[current_env]
+model_path = model_paths[current_env]
+tokenizer_path = tokenizer_paths[current_env]
+
+# Preparing data
 def prepare_data():
-    if not os.path.exists(output_path_ggcolab):
-        with open(input_path_ggcolab, 'r', encoding='utf-8') as file:
+    if not os.path.exists(output_path):
+        with open(input_path, 'r', encoding='utf-8') as file:
             text = file.read()
         cleaned_text = clean_text(text)
-        with open(output_path_ggcolab, 'w', encoding='utf-8') as file:
+        with open(output_path, 'w', encoding='utf-8') as file:
             file.write(cleaned_text)
 
-    # Füge hier ähnliche Logik für Kaggle und Hugging Face hinzu...
-
-# Modelltraining oder Laden des Modells
+# Load model and tokenizer
 def load_model_and_tokenizer():
     model = None
     tokenizer = None
-    if os.path.exists(model_path_ggcolab) and os.path.exists(tokenizer_path_ggcolab):
-        model = tf.keras.models.load_model(model_path_ggcolab)
-        with open(tokenizer_path_ggcolab, 'rb') as handle:
+    if os.path.exists(model_path) and os.path.exists(tokenizer_path):
+        model = tf.keras.models.load_model(model_path)
+        with open(tokenizer_path, 'rb') as handle:
             tokenizer = pickle.load(handle)
-    # Füge hier ähnliches für Kaggle und Hugging Face hinzu...
-
-    if model is None or tokenizer is None:
-        raise FileNotFoundError("Modell- oder Tokenizer-Datei nicht gefunden.")
-
+    else:
+        raise FileNotFoundError("Model or tokenizer file not found.")
     return model, tokenizer
 
-# Funktion zur Vorhersage des nächsten Wortes
-def predict_next_words(prompt, top_k=5):
+# Predict next words with temperature sampling
+def predict_next_words(prompt, top_k=5, temperature=1.0):
     tokens = tokenizer.texts_to_sequences([prompt])
     padded_seq = pad_sequences(tokens, maxlen=model.input_shape[1] - 1, padding='pre')
     predictions = model.predict(padded_seq)[0]
-    
+    predictions = np.asarray(predictions).astype('float64')
+    predictions = np.log(predictions + 1e-8) / temperature
+    exp_predictions = np.exp(predictions)
+    predictions = exp_predictions / np.sum(exp_predictions)
     top_indices = np.argsort(predictions)[-top_k:]
-    next_word_idx = top_indices[-1]  # Das wahrscheinlichste Wort
+    next_word_idx = np.random.choice(top_indices, p=predictions[top_indices])
     return tokenizer.index_word[next_word_idx], predictions[next_word_idx]
 
-# Gradio-Interface
+# Gradio interface
 def auto_generate(prompt, auto):
     generated_text = prompt
     if not auto:
@@ -75,18 +102,43 @@ def auto_generate(prompt, auto):
         for _ in range(10):
             next_word, _ = predict_next_words(generated_text)
             generated_text += ' ' + next_word
-            time.sleep(0.2)  # Alle 0,2 Sekunden generieren
+            time.sleep(0.2)  # Generate every 0.2 seconds
     return generated_text
 
+# Gradio Blocks Interface
 with gr.Blocks() as demo:
-    gr.Markdown("## LSTM-basierte Wortvorhersage")
+    gr.Markdown("## LSTM-based Word Prediction")
 
-    input_text = gr.Textbox(label="Eingabetext")
-    auto_generate_checkbox = gr.Checkbox(label="Automatische Generierung alle 0,2 Sekunden", value=False)
-    auto_generate_button = gr.Button("Generiere Text")
+    input_text = gr.Textbox(label="Input Text", interactive=True)
+    auto_generate_checkbox = gr.Checkbox(label="Automatic Generation every 0.2 seconds", value=False)
+    auto_generate_button = gr.Button("Generate Text")
     
-    generated_text_output = gr.Textbox(label="Eingabefeld für generierten Text", interactive=True)
+    # Add other required buttons
+    predict_button = gr.Button("Predict")
+    next_button = gr.Button("Next")
+    auto_button = gr.Button("Auto")
+    stop_button = gr.Button("Stop")
+    reset_button = gr.Button("Reset")
 
-    auto_generate_button.click(fn=auto_generate, inputs=[input_text, auto_generate_checkbox], outputs=generated_text_output)
+    # Define the functions for new buttons
+    def predict_text(prompt):
+        next_word, _ = predict_next_words(prompt)
+        return prompt + ' ' + next_word
+
+    def append_next_word(prompt):
+        next_word, _ = predict_next_words(prompt)
+        return prompt + ' ' + next_word
+
+    def reset_text():
+        return ""
+
+    auto_generate_button.click(fn=auto_generate, inputs=[input_text, auto_generate_checkbox], outputs=input_text)
+    predict_button.click(fn=predict_text, inputs=input_text, outputs=input_text)
+    next_button.click(fn=append_next_word, inputs=input_text, outputs=input_text)
+    reset_button.click(fn=reset_text, outputs=input_text)
 
 demo.launch()
+
+# Prepare data and load model/tokenizer
+prepare_data()
+model, tokenizer = load_model_and_tokenizer()
