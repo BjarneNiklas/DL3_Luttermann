@@ -55,21 +55,13 @@ def load_model_and_tokenizer():
     return model, tokenizer
 
 # Funktion zur Vorhersage des nächsten Wortes
-def predict_next_words(prompt, top_k=5, top_p=0.95):
+def predict_next_words(prompt, top_k=5):
     tokens = tokenizer.texts_to_sequences([prompt])
     padded_seq = pad_sequences(tokens, maxlen=model.input_shape[1] - 1, padding='pre')
     predictions = model.predict(padded_seq)[0]
     
-    # Top-k Sampling
     top_indices = np.argsort(predictions)[-top_k:]
-    top_probs = predictions[top_indices] / np.sum(predictions[top_indices])
-    
-    # Nucleus Sampling (Top-p)
-    sorted_indices = np.argsort(predictions)[::-1]
-    cumulative_probs = np.cumsum(predictions[sorted_indices])
-    sorted_indices = sorted_indices[cumulative_probs <= top_p]
-
-    next_word_idx = np.random.choice(sorted_indices)
+    next_word_idx = top_indices[-1]  # Das wahrscheinlichste Wort
     return tokenizer.index_word[next_word_idx], predictions[next_word_idx]
 
 # Gradio-Interface
@@ -93,8 +85,8 @@ with gr.Blocks() as demo:
     auto_generate_checkbox = gr.Checkbox(label="Automatische Generierung alle 0,2 Sekunden", value=False)
     auto_generate_button = gr.Button("Generiere Text")
     
-    generated_text_output = gr.Textbox(label="Generierter Text", interactive=True)
+    generated_text_output = gr.Textbox(label="Eingabefeld für generierten Text", interactive=True)
 
-    auto_generate_button.click(fn=auto_generate, inputs=(input_text, auto_generate_checkbox), outputs=generated_text_output)
+    auto_generate_button.click(fn=auto_generate, inputs=[input_text, auto_generate_checkbox], outputs=generated_text_output)
 
 demo.launch()
