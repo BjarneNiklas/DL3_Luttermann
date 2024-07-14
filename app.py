@@ -148,6 +148,6 @@ with gr.Blocks() as demo:
     auto_generate_button = gr.Button("Generiere Text")
     generated_text_output = gr.Textbox(label="Generierter Text", interactive=False)
 
-    auto_generate_button.click(fn=auto_generate, inputs=(input_text, auto_generate_checkbox), outputs=generated_text_output)
+    auto_generate_button.click(fn=auto_generate, inputs=[input_text, auto_generate_checkbox], outputs=generated_text_output)
 
 demo.launch()
