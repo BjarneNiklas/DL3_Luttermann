@@ -17,56 +17,56 @@ def clean_text(text):
     return text
 
 # Pfade für Dateien
-input_path_primary = '/content/Corpus.txt'  # Google Colab
-input_path_secondary = '/kaggle/input/corpus/Corpus.txt'  # Kaggle
-input_path_tertiary = 'LM_LSTM/Corpus.txt'  # Hugging Face
-output_path_primary = '/content/Corpus-cleaned.txt'
-output_path_secondary = '/kaggle/working/Corpus-cleaned.txt'
-output_path_tertiary = 'LM_LSTM/Corpus-cleaned.txt'
-model_path_primary = '/content/word_prediction_model.keras'
-model_path_secondary = '/kaggle/working/word_prediction_model.keras'
-model_path_tertiary = 'LM_LSTM/word_prediction_model.keras'
-tokenizer_path_primary = '/content/tokenizer.pickle'
-tokenizer_path_secondary = '/kaggle/working/tokenizer.pickle'
-tokenizer_path_tertiary = 'LM_LSTM/tokenizer.pickle'
+input_path_ggcolab = '/content/Corpus.txt'  # Google Colab
+input_path_kaggle = '/kaggle/input/corpus/Corpus.txt'  # Kaggle
+input_path_hugface = '/huggingface/input/corpus/Corpus.txt'  # Hugging Face
+
+output_path_ggcolab = '/content/Corpus-cleaned.txt'  # Google Colab
+output_path_kaggle = '/kaggle/working/Corpus-cleaned.txt'  # Kaggle
+output_path_hugface = '/huggingface/working/Corpus-cleaned.txt'  # Hugging Face
+
+model_path_ggcolab = '/content/word_prediction_model.keras'  # Google Colab
+model_path_kaggle = '/kaggle/working/word_prediction_model.keras'  # Kaggle
+model_path_hugface = '/huggingface/working/word_prediction_model.keras'  # Hugging Face
+
+tokenizer_path_ggcolab = '/content/tokenizer.pickle'  # Google Colab
+tokenizer_path_kaggle = '/kaggle/working/tokenizer.pickle'  # Kaggle
+tokenizer_path_hugface = '/huggingface/working/tokenizer.pickle'  # Hugging Face
 
 # Bereinigung und Speicherung des Textes
-if not os.path.exists(output_path_primary):
-    input_path = input_path_primary
-    if os.path.exists(input_path_secondary):
-        input_path = input_path_secondary
-    elif os.path.exists(input_path_tertiary):
-        input_path = input_path_tertiary
-        
-    with open(input_path, 'r', encoding='utf-8') as file:
+if not os.path.exists(output_path_ggcolab):
+    if not os.path.exists(os.path.dirname(output_path_ggcolab)):
+        os.makedirs(os.path.dirname(output_path_ggcolab))
+    
+    with open(input_path_ggcolab, 'r', encoding='utf-8') as file:
         text = file.read()
     cleaned_text = clean_text(text)
-    with open(output_path_primary, 'w', encoding='utf-8') as file:
+    with open(output_path_ggcolab, 'w', encoding='utf-8') as file:
         file.write(cleaned_text)
 
 # Modelltraining oder Laden des Modells
 def load_model_and_tokenizer():
-    if os.path.exists(model_path_primary) and os.path.exists(tokenizer_path_primary):
-        model = tf.keras.models.load_model(model_path_primary)
-        with open(tokenizer_path_primary, 'rb') as handle:
+    if os.path.exists(model_path_ggcolab) and os.path.exists(tokenizer_path_ggcolab):
+        model = tf.keras.models.load_model(model_path_ggcolab)
+        with open(tokenizer_path_ggcolab, 'rb') as handle:
             tokenizer = pickle.load(handle)
-    elif os.path.exists(model_path_secondary) and os.path.exists(tokenizer_path_secondary):
-        model = tf.keras.models.load_model(model_path_secondary)
-        with open(tokenizer_path_secondary, 'rb') as handle:
+    elif os.path.exists(model_path_kaggle) and os.path.exists(tokenizer_path_kaggle):
+        model = tf.keras.models.load_model(model_path_kaggle)
+        with open(tokenizer_path_kaggle, 'rb') as handle:
             tokenizer = pickle.load(handle)
-    elif os.path.exists(model_path_tertiary) and os.path.exists(tokenizer_path_tertiary):
-        model = tf.keras.models.load_model(model_path_tertiary)
-        with open(tokenizer_path_tertiary, 'rb') as handle:
+    elif os.path.exists(model_path_hugface) and os.path.exists(tokenizer_path_hugface):
+        model = tf.keras.models.load_model(model_path_hugface)
+        with open(tokenizer_path_hugface, 'rb') as handle:
             tokenizer = pickle.load(handle)
     else:
-        return None, None
+        return None, None  # Alle Dateien existieren nicht
 
     return model, tokenizer
 
 model, tokenizer = load_model_and_tokenizer()
 
 if model is None or tokenizer is None:
-    with open(output_path_primary, 'r', encoding='utf-8') as file:
+    with open(output_path_ggcolab, 'r', encoding='utf-8') as file:
         cleaned_text = file.read()
 
     tokenizer = Tokenizer()
@@ -96,8 +96,8 @@ if model is None or tokenizer is None:
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     model.fit(X, y, epochs=10, batch_size=32)
 
-    model.save(model_path_primary)
-    with open(tokenizer_path_primary, 'wb') as handle:
+    model.save(model_path_ggcolab)  # Speichere als primäre Datei
+    with open(tokenizer_path_ggcolab, 'wb') as handle:
         pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 # Funktion zur Vorhersage des nächsten Wortes
@@ -115,16 +115,18 @@ def calculate_accuracy(predictions, actual_word):
     accuracy = len(correct_predictions) / len(predictions) * 100 if predictions else 0
     return accuracy
 
-# Gradio-Interface
+# Automatische Generierung von Text
 def auto_generate(prompt, auto):
     generated_text = prompt
-    for _ in range(10):  # Generiere 10 Wörter
-        top_words = predict_next_words(generated_text)
-        next_word = top_words[0][0]  # Das wahrscheinlichste Wort
-        generated_text += ' ' + next_word
-        time.sleep(0.2)  # Pause für 0,2 Sekunden
+    if auto:
+        for _ in range(10):  # Generiere bis zu 10 Wörter
+            top_words = predict_next_words(generated_text)
+            next_word = top_words[0][0]  # Das wahrscheinlichste Wort
+            generated_text += ' ' + next_word
+            time.sleep(0.2)  # Pause für 0,2 Sekunden
     return generated_text
 
+# Gradio-Interface
 with gr.Blocks() as demo:
     gr.Markdown("## LSTM-basierte Wortvorhersage")
 
@@ -142,36 +144,10 @@ with gr.Blocks() as demo:
         accuracy = calculate_accuracy(predictions, actual_word)
         return accuracy
 
-    auto_generate_checkbox = gr.Checkbox(label="Automatische Generierung aktivieren", value=False)
+    auto_generate_checkbox = gr.Checkbox(label="Automatische Generierung alle 0,2 Sekunden", value=False)
     auto_generate_button = gr.Button("Generiere Text")
     generated_text_output = gr.Textbox(label="Generierter Text", interactive=False)
 
     auto_generate_button.click(fn=auto_generate, inputs=(input_text, auto_generate_checkbox), outputs=generated_text_output)
 
-    gr.Markdown("""
-    ## Dokumentation
-    
-    Diese Anwendung verwendet ein gestapeltes LSTM-Modell zur Wortvorhersage. Die Architektur des Modells besteht aus:
-    - Einer Embedding-Schicht
-    - Zwei LSTM-Schichten mit jeweils 100 Einheiten
-    - Einer dichten Ausgabeschicht mit Softmax-Aktivierung
-
-    Das Modell wird auf dem bereitgestellten Datensatz mit dem Verlust von kategorischer Kreuzentropie und dem Adam-Optimizer trainiert.
-    
-    ## Diskussion
-    
-    Das aktuelle Modell zeigt grundlegende Fähigkeiten zur Wortvorhersage. Bereiche zur Verbesserung umfassen:
-    1. Feineinstellung der Hyperparameter (z.B. LSTM-Einheiten, Embedding-Dimension).
-    2. Experimentieren mit verschiedenen Modellarchitekturen.
-    3. Implementierung ausgefeilterer Textvorverarbeitung.
-    4. Erforschung von Techniken zur Vermeidung von Überanpassung (z.B. Dropout, Regularisierung).
-    
-    ## Benutzeranleitung
-    
-    1. Geben Sie einen Starttext in das Feld "Eingabetext" ein.
-    2. Klicken Sie auf "Vorhersage", um die 5 wahrscheinlichsten nächsten Wörter anzuzeigen.
-    3. Aktivieren Sie das Kontrollkästchen "Automatische Generierung", um 10 Wörter automatisch zu generieren.
-    """)
-
-if __name__ == "__main__":
-    demo.launch()
+demo.launch()
