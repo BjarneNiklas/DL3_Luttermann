@@ -2,13 +2,12 @@ import os
 import re
 import pickle
 import numpy as np
-import gradio as gr
-import time
 import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Embedding, LSTM, Dense
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
+import gradio as gr
+import time
+from tensorflow.keras.models import load_model
 
 # Function to clean text and convert old German spelling to new spelling
 def clean_text(text):
@@ -65,78 +64,56 @@ def prepare_data():
         with open(output_path, 'w', encoding='utf-8') as file:
             file.write(cleaned_text)
 
+# Train model if it doesn't exist
+def train_model():
+    with open(output_path, 'r', encoding='utf-8') as file:
+        cleaned_text = file.read()
+    
+    tokenizer = Tokenizer()
+    tokenizer.fit_on_texts([cleaned_text])
+    
+    total_words = len(tokenizer.word_index) + 1
+    input_sequences = []
+    
+    for line in cleaned_text.split('.'):
+        token_list = tokenizer.texts_to_sequences([line])[0]
+        for i in range(1, len(token_list)):
+            n_gram_sequence = token_list[:i+1]
+            input_sequences.append(n_gram_sequence)
+    
+    max_sequence_len = max([len(x) for x in input_sequences])
+    input_sequences = np.array(pad_sequences(input_sequences, maxlen=max_sequence_len, padding='pre'))
+    
+    X, y = input_sequences[:,:-1], input_sequences[:,-1]
+    y = tf.keras.utils.to_categorical(y, num_classes=total_words)
+    
+    model = tf.keras.Sequential([
+        tf.keras.layers.Embedding(total_words, 100, input_length=max_sequence_len-1),
+        tf.keras.layers.LSTM(100, return_sequences=True),
+        tf.keras.layers.LSTM(100),
+        tf.keras.layers.Dense(total_words, activation='softmax')
+    ])
+    
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    model.fit(X, y, epochs=10, batch_size=32)
+    
+    model.save(model_path)
+    with open(tokenizer_path, 'wb') as handle:
+        pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    
+    return model, tokenizer
+
 # Load model and tokenizer
 def load_model_and_tokenizer():
     model = None
     tokenizer = None
     if os.path.exists(model_path) and os.path.exists(tokenizer_path):
-        model = tf.keras.models.load_model(model_path)
+        model = load_model(model_path)
         with open(tokenizer_path, 'rb') as handle:
             tokenizer = pickle.load(handle)
     else:
-        # Train model if not found
         model, tokenizer = train_model()
-        save_model_and_tokenizer(model, tokenizer)
     return model, tokenizer
-
-# Train model
-def train_model():
-    # Load cleaned text
-    with open(output_path, 'r', encoding='utf-8') as file:
-        text = file.read()
-
-    # Tokenize text
-    tokenizer = Tokenizer()
-    tokenizer.fit_on_texts([text])
-    total_words = len(tokenizer.word_index) + 1
-
-    # Create input sequences using generator function
-    max_sequence_len = 50  # Max sequence length
-    input_sequences = create_input_sequences(tokenizer, text, max_sequence_len)
-
-    # Create predictors and label
-    predictors, label = [], []
-    for seq in input_sequences:
-        predictors.append(seq[:-1])
-        label.append(seq[-1])
-
-    predictors = np.array(predictors)
-    label = np.array(label)
-    label = tf.keras.utils.to_categorical(label, num_classes=total_words)
-
-    # Define model architecture
-    embedding_dim = 100
-    model = Sequential()
-    model.add(Embedding(total_words, embedding_dim, input_length=max_sequence_len - 1))
-    model.add(LSTM(150, return_sequences=True))
-    model.add(LSTM(150))
-    model.add(Dense(total_words, activation='softmax'))
-
-    # Compile model
-    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-
-    # Fit model
-    model.fit(predictors, label, epochs=10, verbose=1)
-    
-    return model, tokenizer
-
-# Save model and tokenizer
-def save_model_and_tokenizer(model, tokenizer):
-    model.save(model_path)
-    with open(tokenizer_path, 'wb') as handle:
-        pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-# Function to create input sequences
-def create_input_sequences(tokenizer, text, max_sequence_len):
-    sequences = []
-    for line in text.split('\n'):
-        token_list = tokenizer.texts_to_sequences([line])[0]
-        for i in range(1, len(token_list)):
-            n_gram_sequence = token_list[:i+1]
-            if len(n_gram_sequence) <= max_sequence_len:
-                sequences.append(n_gram_sequence)
-    sequences = pad_sequences(sequences, maxlen=max_sequence_len, padding='pre')
-    return np.array(sequences)
 
 # Calculate perplexity
 def calculate_perplexity(predictions):
@@ -220,18 +197,18 @@ with gr.Blocks() as demo:
     gr.Markdown("## LSTM-based Word Prediction")
 
     probabilities = gr.Dataframe(
-        label="Select next word",
-        headers=["Predicted Words"],
+        label="Gib einen beliebigen Text ein",
+        headers=["Wähle nächstes Wort aus"],
         datatype=["str"],
         col_count=1
     )
 
     input_text = gr.Textbox(label="Input Text", interactive=True)
 
-    predict_button = gr.Button("Prediction")
-    next_button = gr.Button("Next")
+    predict_button = gr.Button("Vorhersage")
+    next_button = gr.Button("Weiter")
     auto_button = gr.Button("Auto")
-    stop_button = gr.Button("Stop")
+    stop_button = gr.Button("Stopp")
     reset_button = gr.Button("Reset")
 
     perplexity_text = gr.Textbox(label="Perplexity", interactive=False)
