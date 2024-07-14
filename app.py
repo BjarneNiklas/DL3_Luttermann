@@ -17,18 +17,28 @@ def clean_text(text):
     return text
 
 # Pfade für Dateien
-input_path_primary = '/content/Corpus.txt'
-input_path_secondary = '/kaggle/input/corpus/Corpus.txt'
+input_path_primary = '/content/Corpus.txt'  # Google Colab
+input_path_secondary = '/kaggle/input/corpus/Corpus.txt'  # Kaggle
+input_path_tertiary = 'LM_LSTM/Corpus.txt'  # Hugging Face
 output_path_primary = '/content/Corpus-cleaned.txt'
 output_path_secondary = '/kaggle/working/Corpus-cleaned.txt'
+output_path_tertiary = 'LM_LSTM/Corpus-cleaned.txt'
 model_path_primary = '/content/word_prediction_model.keras'
 model_path_secondary = '/kaggle/working/word_prediction_model.keras'
+model_path_tertiary = 'LM_LSTM/word_prediction_model.keras'
 tokenizer_path_primary = '/content/tokenizer.pickle'
 tokenizer_path_secondary = '/kaggle/working/tokenizer.pickle'
+tokenizer_path_tertiary = 'LM_LSTM/tokenizer.pickle'
 
 # Bereinigung und Speicherung des Textes
 if not os.path.exists(output_path_primary):
-    with open(input_path_primary, 'r', encoding='utf-8') as file:
+    input_path = input_path_primary
+    if os.path.exists(input_path_secondary):
+        input_path = input_path_secondary
+    elif os.path.exists(input_path_tertiary):
+        input_path = input_path_tertiary
+        
+    with open(input_path, 'r', encoding='utf-8') as file:
         text = file.read()
     cleaned_text = clean_text(text)
     with open(output_path_primary, 'w', encoding='utf-8') as file:
@@ -43,6 +53,10 @@ def load_model_and_tokenizer():
     elif os.path.exists(model_path_secondary) and os.path.exists(tokenizer_path_secondary):
         model = tf.keras.models.load_model(model_path_secondary)
         with open(tokenizer_path_secondary, 'rb') as handle:
+            tokenizer = pickle.load(handle)
+    elif os.path.exists(model_path_tertiary) and os.path.exists(tokenizer_path_tertiary):
+        model = tf.keras.models.load_model(model_path_tertiary)
+        with open(tokenizer_path_tertiary, 'rb') as handle:
             tokenizer = pickle.load(handle)
     else:
         return None, None
